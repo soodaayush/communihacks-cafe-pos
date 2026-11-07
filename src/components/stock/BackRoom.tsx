@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Icon, type IconName } from "@/components/icons/Icon";
+import { Icon } from "@/components/icons/Icon";
+import { pictureOf } from "@/components/icons/supplyPicture";
 import { CountSheet } from "@/components/stock/CountSheet";
 import { StockLevel } from "@/components/stock/StockLevel";
 import type { InventoryItem } from "@/lib/types";
@@ -11,23 +12,6 @@ import type { InventoryItem } from "@/lib/types";
 
 const getJson = <T,>(url: string): Promise<T> =>
   fetch(url).then((r) => (r.ok ? r.json() : Promise.reject(new Error(url))));
-
-// One picture per thing, with a fallback for anything new.
-const PICTURE: Record<string, IconName> = {
-  "Coffee beans": "coffeeBeans",
-  Milk: "milk",
-  "Tea bags": "teaBox",
-  "Cocoa powder": "cocoa",
-  Flour: "flour",
-  Sugar: "sugar",
-  Eggs: "eggs",
-  Bread: "bread",
-  "Paper cups": "cups",
-  "Cup lids": "lids",
-  Napkins: "napkins",
-  "Cleaning spray": "spray",
-};
-const pictureOf = (i: InventoryItem): IconName => PICTURE[i.name] ?? "crate";
 
 const amount = (n: number) => String(Math.round(n));
 // Units are plain words ("bags", "cartons", "units"): "1 bag", "3 bags".
