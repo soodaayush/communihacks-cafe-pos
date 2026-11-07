@@ -9,6 +9,7 @@ import { formatCents } from "@/lib/money";
 import type { MenuItem } from "@/lib/types";
 import { PRICE_STEP_CENTS, compare, outcome, priceRange, type Outcome } from "@/lib/whatif";
 import type { WhatIfData } from "@/lib/whatif-data";
+import { GuessGame } from "./GuessGame";
 import { ItemPicker, TINT } from "./ItemPicker";
 import { WhatIfStory } from "./WhatIfStory";
 import { useTweened } from "./motion";
@@ -16,6 +17,8 @@ import { Jar } from "./pictures";
 
 const fadeIn =
   "motion-safe:transition-[opacity,translate] motion-safe:duration-300 motion-safe:ease-out starting:translate-y-1 starting:opacity-0";
+
+type Mode = "learn" | "try";
 
 const VERDICT = {
   more: { bg: "bg-sage", arrow: "↑", text: "More money for you" },
@@ -30,6 +33,8 @@ export function WhatIfScreen({ data }: { data: Promise<WhatIfData> }) {
   const [priceCents, setPriceCents] = useState(item?.priceCents ?? 0);
   const [showHow, setShowHow] = useState(false);
   const [picking, setPicking] = useState(false);
+  // Learning first: guess, then see why. "Try a price" is the free slider.
+  const [mode, setMode] = useState<Mode>("learn");
 
   if (!item) return <p className="text-xl text-ink-soft">No menu items yet.</p>;
 
@@ -53,8 +58,8 @@ export function WhatIfScreen({ data }: { data: Promise<WhatIfData> }) {
       `At ${formatCents(priceCents)}, you keep ${formatCents(next.keepPerDayCents)} a day.`
     : `Now you keep ${formatCents(now.keepPerDayCents)} a day from ${item.name}.`;
 
-  return (
-    <div className="flex flex-col gap-6 lg:grid lg:h-full lg:grid-cols-[minmax(0,1fr)_minmax(22rem,30rem)]">
+  const tryIt = (
+    <div className="flex flex-col gap-6 lg:grid lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,30rem)]">
       <div className="flex flex-col gap-6 lg:overflow-y-auto lg:p-1">
         <section className="flex flex-col gap-5 rounded-tile bg-white p-6 ring-1 ring-ink/10">
           {/* The chosen item. Fixed height (the picture's), so long names never resize the card. */}
@@ -181,6 +186,37 @@ export function WhatIfScreen({ data }: { data: Promise<WhatIfData> }) {
 
       {showHow && (
         <WhatIfStory item={item} now={now} next={next} onClose={() => setShowHow(false)} />
+      )}
+    </div>
+  );
+
+  const tab = (id: Mode, icon: string, text: string) => (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={mode === id}
+      onClick={() => setMode(id)}
+      className={`flex min-h-14 flex-1 items-center justify-center gap-3 rounded-full text-xl font-bold motion-safe:transition-[background-color,box-shadow] motion-safe:duration-200 sm:flex-none sm:px-8 ${mode === id ? "bg-white ring-2 ring-ink" : "bg-white/50 ring-1 ring-ink/10"}`}
+    >
+      <span aria-hidden className="text-2xl">
+        {icon}
+      </span>
+      {text}
+    </button>
+  );
+
+  return (
+    <div className={`flex flex-col gap-3 ${mode === "learn" ? "h-full" : "lg:h-full"}`}>
+      <div role="tablist" aria-label="What if" className="flex shrink-0 gap-3">
+        {tab("learn", "🎯", "Learn")}
+        {tab("try", "🎚️", "Try a price")}
+      </div>
+      {mode === "learn" ? (
+        <div className="mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col">
+          <GuessGame menu={menu} soldPerDay={soldPerDay} />
+        </div>
+      ) : (
+        tryIt
       )}
     </div>
   );

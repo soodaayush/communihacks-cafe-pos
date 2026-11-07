@@ -3,7 +3,12 @@
 // Pictures used by the What-if screen. Each one stands for one idea, every time it appears:
 //   jar = money you keep in a day, bar = money from one sale, person = one customer.
 // They animate in from empty, and glide when their amounts change.
+import Image from "next/image";
 import type { ReactNode } from "react";
+import { imageUrl } from "@/lib/integrations/cloudinary";
+import { formatCents } from "@/lib/money";
+import type { MenuItem } from "@/lib/types";
+import type { Outcome } from "@/lib/whatif";
 import { useEntered } from "./motion";
 
 export function Person({
@@ -177,4 +182,31 @@ function BarSegment({ part, scale }: { part: BarPart; scale: number }) {
       {part.label && pct >= 30 ? part.label : null}
     </span>
   );
+}
+
+/** One sale as a bar: pink part buys the item, green part is yours. A loss has no green part. */
+export function SaleBar({ item, r, scale }: { item: MenuItem; r: Outcome; scale: number }) {
+  const itemPic = (
+    <Image
+      src={imageUrl(item.imagePublicId)}
+      alt=""
+      width={40}
+      height={40}
+      unoptimized
+      className="size-10"
+    />
+  );
+  const parts: BarPart[] =
+    r.keepEachCents >= 0
+      ? [
+          { cents: item.costCents, className: "bg-blush", icon: itemPic },
+          {
+            cents: r.keepEachCents,
+            className: "bg-sage",
+            label: formatCents(r.keepEachCents),
+            icon: <MiniJar />,
+          },
+        ]
+      : [{ cents: r.priceCents, className: "bg-blush", icon: itemPic }];
+  return <MoneyBar scale={scale} parts={parts} />;
 }
