@@ -13,7 +13,10 @@ import type {
   TrendPoint,
 } from "./types";
 
-export const mockMenu: MenuItem[] = [
+// One shelf shared by every route (in dev each route can load its own copy of this module),
+// so a mock sale shows up on the Stock screen. Resets when the server restarts.
+const shared = globalThis as { __kwhabMockMenu?: MenuItem[] };
+export const mockMenu: MenuItem[] = (shared.__kwhabMockMenu ??= [
   {
     id: "m1",
     name: "Coffee",
@@ -94,7 +97,7 @@ export const mockMenu: MenuItem[] = [
     stock: 6,
     reorderLevel: 4,
   },
-];
+]);
 
 export const mockSupplies: InventoryItem[] = [
   {
@@ -205,20 +208,33 @@ export const mockTrends: TrendPoint[] = [...mockItemSales("month")].reverse();
 
 /** Same rule as the real /api/restock-suggestions query, with a flat daily pace from the last week:
  *  suggest when at the reorder level or running out within 3 days; buy a week's sales
- *  (at least double the reorder level) minus what is on the shelf. */
-export const mockRestock: RestockSuggestion[] = mockMenu.flatMap((m) => {
-  const sold = mockItemSales("week")
-    .filter((t) => t.menuItemId === m.id)
-    .reduce((sum, t) => sum + t.qtySold, 0);
-  const daysLeft = sold > 0 ? Math.min(14, Math.floor(m.stock / (sold / 7))) : 14;
-  if (m.stock > m.reorderLevel && daysLeft > 3) return [];
-  return [
-    {
-      menuItemId: m.id,
-      stock: m.stock,
-      reorderLevel: m.reorderLevel,
-      suggestedQty: Math.max(sold, m.reorderLevel * 2) - m.stock,
-      daysLeft,
-    },
-  ];
-});
+ *  (at least double the reorder level) minus what is on the shelf. Uses the current mock stock. */
+export function mockRestock(): RestockSuggestion[] {
+  return mockMenu.flatMap((m) => {
+    const sold = mockItemSales("week")
+      .filter((t) => t.menuItemId === m.id)
+      .reduce((sum, t) => sum + t.qtySold, 0);
+    const daysLeft = sold > 0 ? Math.min(14, Math.floor(m.stock / (sold / 7))) : 14;
+    if (m.stock > m.reorderLevel && daysLeft > 3) return [];
+    return [
+      {
+        menuItemId: m.id,
+        stock: m.stock,
+        reorderLevel: m.reorderLevel,
+        suggestedQty: Math.max(sold, m.reorderLevel * 2) - m.stock,
+        daysLeft,
+      },
+    ];
+  });
+}
+
+/** Mock mode only: a sale takes its items off the shelf (never below zero), like the real route. */
+export function applyMockSale(items: unknown): void {
+  if (!Array.isArray(items)) return;
+  for (const line of items as { menuItemId?: unknown; qty?: unknown }[]) {
+    const item = mockMenu.find((m) => m.id === line?.menuItemId);
+    const qty = line?.qty;
+    if (item && typeof qty === "number" && Number.isInteger(qty) && qty > 0)
+      item.stock = Math.max(0, item.stock - qty);
+  }
+}

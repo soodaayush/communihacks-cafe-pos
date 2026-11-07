@@ -73,7 +73,7 @@ export default function RegisterPage() {
       body: JSON.stringify({ paymentMethod, totalCents, items: order }),
     });
     if (!res.ok) throw new Error(`Sale not saved: ${res.status}`);
-    // shortcut: stock is updated locally only; reload /api/menu once the sales route decrements it in the DB.
+    // The server lowers the stock too (DB or mock shelf); this just updates the tiles without a reload.
     setMenu((m) => m && m.map((it) => ({ ...it, stock: it.stock - qtyOf(it.id) })));
   }
 
