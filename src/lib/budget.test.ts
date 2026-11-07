@@ -1,6 +1,6 @@
 // Run: npx tsx src/lib/budget.test.ts
 import assert from "node:assert/strict";
-import { billsCover, buildMonths } from "./budget";
+import { billsCover, buildMonths, forecastMonth } from "./budget";
 
 const months = buildMonths(
   [
@@ -34,4 +34,13 @@ assert.deepEqual(buildMonths([], [], 500), []);
 assert.deepEqual(billsCover(months[1]), { needCents: 4300, toGoCents: 2300, extraCents: 0 });
 // October has no plan, so its own bills (800) count; 1500 came in, 700 extra.
 assert.deepEqual(billsCover(months[0]), { needCents: 800, toGoCents: 0, extraCents: 700 });
+
+// Forecast: 2000 in after 1 day of a 30-day month = 2000/day; 4300 of bills reached on day 3.
+assert.deepEqual(forecastMonth(months[1], 1, 30), {
+  paceCents: 2000,
+  projectedCents: 60_000,
+  coverDay: 3,
+});
+// Too slow to reach the bills this month -> no cover day.
+assert.equal(forecastMonth({ ...months[1], inCents: 100 }, 1, 30).coverDay, null);
 console.log("budget ok");

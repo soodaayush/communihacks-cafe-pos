@@ -1,4 +1,4 @@
-import { billsCover, dollars, monthName, type BudgetMonth } from "@/lib/budget";
+import { billsCover, dollars, forecastMonth, monthName, type BudgetMonth } from "@/lib/budget";
 
 /** Break-even in plain words: have this month's sales paid for this month's bills yet? */
 export function BillsCover({ month }: { month: BudgetMonth | undefined }) {
@@ -6,6 +6,15 @@ export function BillsCover({ month }: { month: BudgetMonth | undefined }) {
   const { needCents, toGoCents, extraCents } = billsCover(month);
   const covered = toGoCents === 0;
   const pct = needCents ? Math.min(100, (month.inCents / needCents) * 100) : 100;
+
+  // Forecast only for the month we are in (today's UTC date, like the rest of the Money data).
+  const now = new Date();
+  const isThisMonth = now.toISOString().slice(0, 7) === month.month;
+  const daysInMonth = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0),
+  ).getUTCDate();
+  const forecast = isThisMonth ? forecastMonth(month, now.getUTCDate(), daysInMonth) : null;
+  const name = monthName(month.month);
 
   return (
     <section
@@ -43,6 +52,29 @@ export function BillsCover({ month }: { month: BudgetMonth | undefined }) {
             {dollars(needCents)} − {dollars(month.inCents)} = {dollars(toGoCents)}
           </span>
         </p>
+      )}
+
+      {forecast && (
+        <div>
+          <h3 className="mb-2 text-xl font-semibold">At this pace</h3>
+          <ul className="flex flex-col gap-1 text-lg">
+            <li>
+              You take in about{" "}
+              <strong className="tabular-nums">{dollars(forecast.paceCents)}</strong> a day.
+            </li>
+            <li>
+              By the end of {name}: about{" "}
+              <strong className="tabular-nums">{dollars(forecast.projectedCents)}</strong>.
+            </li>
+            {!covered && (
+              <li>
+                {forecast.coverDay
+                  ? `The bills should be covered around ${name} ${forecast.coverDay}.`
+                  : `At this pace, the bills won't all be covered this month.`}
+              </li>
+            )}
+          </ul>
+        </div>
       )}
     </section>
   );

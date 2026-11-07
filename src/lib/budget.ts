@@ -92,6 +92,23 @@ export function billsCover(m: BudgetMonth) {
   };
 }
 
+/**
+ * Simple forecast for the current month at the pace so far. `today` is the day of the month
+ * (1-31, counted as a day with sales). `coverDay` = the day the running total reaches the bills,
+ * or null if it won't this month.
+ */
+export function forecastMonth(m: BudgetMonth, today: number, daysInMonth: number) {
+  const paceCents = today > 0 ? m.inCents / today : 0;
+  const projectedCents = Math.round(m.inCents + paceCents * (daysInMonth - today));
+  const { needCents } = billsCover(m);
+  const day = paceCents > 0 ? Math.ceil(needCents / paceCents) : Infinity;
+  return {
+    paceCents: Math.round(paceCents),
+    projectedCents,
+    coverDay: day <= daysInMonth ? Math.max(day, 1) : null,
+  };
+}
+
 /** Whole dollars, like the rest of the Money screen: fewer digits to read. */
 export const dollars = (cents: number): string =>
   `${cents < 0 ? "−" : ""}$${Math.round(Math.abs(cents) / 100).toLocaleString("en-CA")}`;
