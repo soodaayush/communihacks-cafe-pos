@@ -8,38 +8,39 @@ const RANGES: SummaryRange[] = ["day", "week", "month"];
 const DAYS: Record<SummaryRange, number> = { day: 1, week: 7, month: 30 };
 
 // GET /api/summary?range=day|week|month  ->  DaySummary[] (one per day, newest first)
-//   moneyIn  = sales taken that day
-//   moneyOut = expenses that day (restocks are logged as "inventory" expenses, so they are included)
-//   left     = moneyIn - moneyOut            (cash position)
+//   moneyIn  = sales taken that day            (sales_daily continuous aggregate)
+//   moneyOut = expenses that day               (restocks are logged as "inventory" expenses)
+//   left     = moneyIn - moneyOut              (cash position)
 //   profit   = sales - cost of what was sold - non-inventory expenses
-//              (inventory spend is already counted through the cost of goods sold)
-// Days are UTC calendar days. Days with no activity still appear, as zeros.
+//              (inventory spend is already counted through the cost of goods sold: item_daily)
+// time_bucket_gapfill makes sure days with no sales still appear, as zeros. Days are UTC.
 export function GET(request: NextRequest) {
   const range = (request.nextUrl.searchParams.get("range") ?? "day") as SummaryRange;
   if (!RANGES.includes(range)) {
     return Response.json({ error: "range must be day, week or month" }, { status: 400 });
   }
+  // Window = the last N UTC days, ending after today. Passed explicitly: gapfill cannot infer
+  // its bounds through a real-time continuous aggregate.
+  const end = new Date();
+  end.setUTCHours(0, 0, 0, 0);
+  end.setUTCDate(end.getUTCDate() + 1);
+  const start = new Date(end.getTime() - DAYS[range] * 86_400_000);
   return dbOrMock(
     () => mockSummary(range),
     () =>
       query<DaySummary>(
-        `WITH days AS (
-           SELECT d::date AS day
-             FROM generate_series((now() AT TIME ZONE 'UTC')::date - ($1::int - 1),
-                                  (now() AT TIME ZONE 'UTC')::date, interval '1 day') AS d
-         ),
-         sold AS (
-           SELECT (s.created_at AT TIME ZONE 'UTC')::date AS day,
-                  sum(s.total_cents)::int AS money_in
-             FROM sales s
-            WHERE s.created_at >= (now() AT TIME ZONE 'UTC')::date - ($1::int - 1)
+        `WITH sold AS (
+           SELECT time_bucket_gapfill(interval '1 day', day, $1::timestamptz, $2::timestamptz) AS day,
+                  coalesce(sum(money_in_cents), 0)::int AS money_in
+             FROM sales_daily
+            WHERE day >= $1::timestamptz AND day < $2::timestamptz
             GROUP BY 1
          ),
          margin AS (
-           SELECT (si.sale_created_at AT TIME ZONE 'UTC')::date AS day,
-                  sum(si.qty * si.unit_cost_cents)::int AS cogs
-             FROM sale_items si
-            WHERE si.sale_created_at >= (now() AT TIME ZONE 'UTC')::date - ($1::int - 1)
+           SELECT time_bucket_gapfill(interval '1 day', day, $1::timestamptz, $2::timestamptz) AS day,
+                  coalesce(sum(cogs_cents), 0)::int AS cogs
+             FROM item_daily
+            WHERE day >= $1::timestamptz AND day < $2::timestamptz
             GROUP BY 1
          ),
          spent AS (
@@ -47,21 +48,19 @@ export function GET(request: NextRequest) {
                   sum(amount_cents)::int AS money_out,
                   sum(amount_cents) FILTER (WHERE type <> 'inventory')::int AS overhead
              FROM expenses
-            WHERE date >= (now() AT TIME ZONE 'UTC')::date - ($1::int - 1)
+            WHERE date >= ($1::timestamptz AT TIME ZONE 'UTC')::date
             GROUP BY 1
          )
-         SELECT to_char(days.day, 'YYYY-MM-DD')                                AS date,
-                coalesce(sold.money_in, 0)                                     AS "moneyInCents",
-                coalesce(spent.money_out, 0)                                   AS "moneyOutCents",
-                coalesce(sold.money_in, 0) - coalesce(spent.money_out, 0)      AS "leftCents",
-                coalesce(sold.money_in, 0) - coalesce(margin.cogs, 0)
-                  - coalesce(spent.overhead, 0)                                AS "profitCents"
-           FROM days
-           LEFT JOIN sold   USING (day)
-           LEFT JOIN margin USING (day)
-           LEFT JOIN spent  USING (day)
-          ORDER BY days.day DESC`,
-        [DAYS[range]],
+         SELECT to_char(sold.day AT TIME ZONE 'UTC', 'YYYY-MM-DD')               AS date,
+                sold.money_in                                                     AS "moneyInCents",
+                coalesce(spent.money_out, 0)                                      AS "moneyOutCents",
+                sold.money_in - coalesce(spent.money_out, 0)                      AS "leftCents",
+                sold.money_in - margin.cogs - coalesce(spent.overhead, 0)         AS "profitCents"
+           FROM sold
+           JOIN margin USING (day)
+           LEFT JOIN spent ON spent.day = (sold.day AT TIME ZONE 'UTC')::date
+          ORDER BY sold.day DESC`,
+        [start.toISOString(), end.toISOString()],
       ),
   );
 }

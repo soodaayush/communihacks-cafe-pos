@@ -88,6 +88,20 @@ export interface RestockSuggestion {
   stock: number;
   reorderLevel: number;
   suggestedQty: number;
+  daysLeft?: number; // days the current stock lasts at the usual pace for each weekday (capped at 14)
+}
+
+// Sales grouped by hour of the day (UTC), summed over the requested days.
+export interface BusyHour {
+  hour: number; // 0-23
+  saleCount: number;
+  moneyInCents: number;
+}
+
+// End-of-day level of one back-room item.
+export interface StockPoint {
+  date: string; // YYYY-MM-DD
+  stock: number;
 }
 
 export interface ExplainRequest {

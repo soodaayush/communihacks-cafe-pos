@@ -18,6 +18,8 @@ No env vars are needed to start: every API route returns mock data. Copy `.env.e
 2. `npm run db:schema` creates the tables (safe to re-run). `npm run db:seed` fills 30 days of fake history, and **wipes** these tables first.
 3. With `DATABASE_URL` set, every route in `src/app/api` reads and writes the real database. Without it, they return mock data.
 
+Tiger Data features in use: hypertables with columnstore compression (`sales`, `sale_items`, `stock_movements`), real-time continuous aggregates (`sales_daily`, `sales_hourly`, `item_daily`) with refresh policies, and `time_bucket_gapfill` for charts with no holes. Also: `/api/busy-hours` (sales by hour of day), `/api/supplies/history?itemId=` (stock level over time) and a weekday-aware `/api/restock-suggestions` (with `daysLeft`).
+
 Back-room stock (ingredients, packaging, supplies) is at `/api/supplies`; stock changes are logged via `POST /api/supplies/movements`. `/api/inventory` and `/api/menu` are the sellable items.
 
 ## Where things go
