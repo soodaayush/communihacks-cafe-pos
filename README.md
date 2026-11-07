@@ -26,26 +26,24 @@ Back-room stock (ingredients, packaging, supplies) is at `/api/supplies`; stock 
 
 ## Where things go
 
-| Path                                   | What                                                      |
-| -------------------------------------- | --------------------------------------------------------- |
-| `src/app/<screen>/page.tsx`            | Screens: `register`, `stock`, `money`, `whatif`           |
-| `src/app/api/**/route.ts`              | One file per API route                                    |
-| `src/components/<area>/`               | UI pieces: `register`, `stock`, `money`, `voice`, `nav`   |
-| `src/lib/types.ts`                     | **Shared contract.** Money is always whole cents          |
-| `src/lib/db.ts`                        | Tiger Data client (`query()`) — server only               |
-| `src/lib/mock-data.ts`                 | Fake data the API returns until the DB is wired           |
-| `src/lib/integrations/cloudinary.ts`   | Image URLs + signed uploads                               |
-| `src/lib/speech.ts`                    | Read aloud (browser Web Speech API)                       |
-| `src/lib/explain.ts`                   | Simple-words explanations (local rules)                   |
-| `src/lib/metrics.ts`                   | Insight numbers, computed in code (never by the AI)       |
-| `src/lib/insights.ts`                  | Picks top 3 insights; Gemini wording + local fallback     |
-| `src/lib/integrations/gemini.ts`       | Gemini call (structured JSON)                             |
-| `src/lib/whatif.ts`                    | What-if price maths (`npx tsx src/lib/whatif.test.ts`)    |
-| `src/lib/whatif-game.ts`               | Learn mode rounds (`npx tsx src/lib/whatif-game.test.ts`) |
-| `src/styles/tokens.css`                | Colours, touch size, font sizes (Tailwind `@theme`)       |
-| `src/app/manifest.ts`, `public/icons/` | PWA manifest + icons                                      |
-| `db/schema.sql`                        | Database schema (`npm run db:schema`, needs `psql`)       |
-| `scripts/seed.ts`                      | Fake data seed (`npm run db:seed`)                        |
+| Path                                   | What                                                    |
+| -------------------------------------- | ------------------------------------------------------- |
+| `src/app/<screen>/page.tsx`            | Screens: `register`, `stock`, `money`                   |
+| `src/app/api/**/route.ts`              | One file per API route                                  |
+| `src/components/<area>/`               | UI pieces: `register`, `stock`, `money`, `voice`, `nav` |
+| `src/lib/types.ts`                     | **Shared contract.** Money is always whole cents        |
+| `src/lib/db.ts`                        | Tiger Data client (`query()`) — server only             |
+| `src/lib/mock-data.ts`                 | Fake data the API returns until the DB is wired         |
+| `src/lib/integrations/cloudinary.ts`   | Image URLs + signed uploads                             |
+| `src/lib/speech.ts`                    | Read aloud (browser Web Speech API)                     |
+| `src/lib/explain.ts`                   | Simple-words explanations (local rules)                 |
+| `src/lib/metrics.ts`                   | Insight numbers, computed in code (never by the AI)     |
+| `src/lib/insights.ts`                  | Picks top 3 insights; Gemini wording + local fallback   |
+| `src/lib/integrations/gemini.ts`       | Gemini call (structured JSON)                           |
+| `src/styles/tokens.css`                | Colours, touch size, font sizes (Tailwind `@theme`)     |
+| `src/app/manifest.ts`, `public/icons/` | PWA manifest + icons                                    |
+| `db/schema.sql`                        | Database schema (`npm run db:schema`, needs `psql`)     |
+| `scripts/seed.ts`                      | Fake data seed (`npm run db:seed`)                      |
 
 Tailwind 4 is configured in CSS, so there is no `tailwind.config.js`: tokens in `src/styles/tokens.css` become utilities such as `bg-sage`, `min-h-touch`, `text-number` and `rounded-tile`.
 

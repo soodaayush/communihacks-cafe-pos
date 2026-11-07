@@ -2,11 +2,11 @@
 
 Find your work with: `grep -rn "TODO(dev1)" src db scripts` (or dev2, dev3).
 
-| Dev  | Area                                   | Owns                                                                                                                                                                                                                                                                                    |
-| ---- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| dev1 | Data, API, Tiger Data                  | `db/`, `scripts/`, `src/lib/db.ts`, `src/lib/mock-data.ts`, `src/app/api/*` (except explain, speak, images)                                                                                                                                                                             |
-| dev2 | Register + Stock screens               | `src/app/register`, `src/app/stock`, `src/components/register`, `src/components/stock`, `src/components/nav`, PWA                                                                                                                                                                       |
-| dev3 | Money + teaching screens, integrations | `src/app/money`, `src/app/whatif`, `src/components/money`, `src/components/voice`, `src/lib/integrations`, `src/lib/speech.ts`, `src/lib/explain.ts`, `api/explain`, `api/speak`, `api/images`, `api/insights`, `src/lib/metrics.ts`, `src/lib/insights*.ts`, `src/components/insights` |
+| Dev  | Area                                   | Owns                                                                                                                                                                                                                                                                  |
+| ---- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| dev1 | Data, API, Tiger Data                  | `db/`, `scripts/`, `src/lib/db.ts`, `src/lib/mock-data.ts`, `src/app/api/*` (except explain, speak, images)                                                                                                                                                           |
+| dev2 | Register + Stock screens               | `src/app/register`, `src/app/stock`, `src/components/register`, `src/components/stock`, `src/components/nav`, PWA                                                                                                                                                     |
+| dev3 | Money + teaching screens, integrations | `src/app/money`, `src/components/money`, `src/components/voice`, `src/lib/integrations`, `src/lib/speech.ts`, `src/lib/explain.ts`, `api/explain`, `api/speak`, `api/images`, `api/insights`, `src/lib/metrics.ts`, `src/lib/insights*.ts`, `src/components/insights` |
 
 ## Git rule
 

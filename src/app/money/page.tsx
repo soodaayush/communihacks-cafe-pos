@@ -9,7 +9,7 @@ import { getExpenses, getKeptByDay } from "@/lib/money-data";
 
 const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
 
-// One idea, the same one as What-if: customers pay you; part of it pays for making what they
+// One idea: customers pay you; part of it pays for making what they
 // bought; the rest you keep. Today first. Loaded on the server (no loading flash); the tip streams in.
 export default async function MoneyPage({
   searchParams,
