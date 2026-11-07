@@ -62,6 +62,9 @@ CREATE TABLE IF NOT EXISTS sale_items (
   tsdb.segmentby = 'menu_item_id',
   tsdb.orderby = 'sale_created_at DESC'
 );
+-- Chunks older than a week move to compressed columnstore automatically (sale_items needs it spelled
+-- out when the table was converted in place; if_not_exists makes this a no-op otherwise).
+CALL add_columnstore_policy('sale_items', after => INTERVAL '7 days', if_not_exists => TRUE);
 CREATE INDEX IF NOT EXISTS sale_items_sale_idx ON sale_items (sale_id, sale_created_at);
 CREATE INDEX IF NOT EXISTS sale_items_item_time_idx ON sale_items (menu_item_id, sale_created_at DESC);
 
