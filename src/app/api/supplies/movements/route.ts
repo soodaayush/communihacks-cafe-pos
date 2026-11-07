@@ -1,7 +1,8 @@
 import { HttpError, dbOrMock, isUuid, readJson } from "@/lib/api";
 import { withTransaction } from "@/lib/db";
 import { mockSupplies } from "@/lib/mock-data";
-import type { InventoryItem, StockMovement, StockReason } from "@/lib/types";
+import { getSupply } from "@/lib/queries";
+import type { StockMovement, StockReason } from "@/lib/types";
 
 const REASONS: StockReason[] = ["purchase", "use", "waste", "adjustment"];
 
@@ -21,21 +22,24 @@ export function POST(request: Request) {
         throw new HttpError("purchase adds stock; use and waste remove it");
 
       return withTransaction(async (client) => {
-        const { rows } = await client.query<InventoryItem>(
-          `UPDATE inventory_items
-              SET stock = GREATEST(stock + $2, 0)
-            WHERE id = $1
-        RETURNING id, name, image_public_id AS "imagePublicId", category, unit,
-                  stock::float8 AS stock, reorder_level::float8 AS "reorderLevel",
-                  unit_cost_cents AS "unitCostCents"`,
-          [inventoryItemId, changeQty],
+        const current = await client.query<{ stock: number }>(
+          `SELECT stock::float8 AS stock FROM inventory_items WHERE id = $1 FOR UPDATE`,
+          [inventoryItemId],
         );
-        if (!rows[0]) throw new HttpError("No such inventory item", 404);
-        await client.query(
-          `INSERT INTO stock_movements (inventory_item_id, change_qty, reason) VALUES ($1, $2, $3)`,
-          [inventoryItemId, changeQty, reason],
-        );
-        return rows[0];
+        if (!current.rows[0]) throw new HttpError("No such inventory item", 404);
+        // Stock never goes below 0, and the ledger records only what really changed.
+        const change = Math.max(changeQty, -current.rows[0].stock);
+        if (change !== 0) {
+          await client.query(`UPDATE inventory_items SET stock = stock + $2 WHERE id = $1`, [
+            inventoryItemId,
+            change,
+          ]);
+          await client.query(
+            `INSERT INTO stock_movements (inventory_item_id, change_qty, reason) VALUES ($1, $2, $3)`,
+            [inventoryItemId, change, reason],
+          );
+        }
+        return (await getSupply((sql, params) => client.query(sql, params), inventoryItemId))!;
       });
     },
     201,

@@ -6,7 +6,8 @@ import type { BuyResult } from "@/app/api/supplies/buy/route";
 import { Icon } from "@/components/icons/Icon";
 import { pictureOf } from "@/components/icons/supplyPicture";
 import type { InventoryItem } from "@/lib/types";
-import { money, unitOf } from "./BoughtList";
+import { packNote, unitOf } from "@/lib/units";
+import { money } from "./BoughtList";
 
 const MAX = 99;
 
@@ -125,7 +126,10 @@ export function BuySheet({
               </button>
               <p className="flex flex-1 flex-col items-center">
                 <span className="text-hero leading-none font-bold tabular-nums">{qty}</span>
-                <span className="text-lg text-ink-soft">{unitOf(qty, picked.unit)}</span>
+                <span className="text-lg text-ink-soft">{unitOf(qty, picked.packName)}</span>
+                {packNote(picked) && (
+                  <span className="text-base text-ink-soft">({packNote(picked)})</span>
+                )}
               </p>
               <button
                 type="button"

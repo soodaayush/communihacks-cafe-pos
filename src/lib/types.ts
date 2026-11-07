@@ -24,10 +24,14 @@ export interface InventoryItem {
   name: string;
   imagePublicId: string;
   category: InventoryCategory;
-  unit: string; // counting words: "bags", "cartons", "units"
-  stock: number; // whole count, in `unit`
-  reorderLevel: number;
-  unitCostCents: number;
+  unit: string; // what `stock` counts: "g", "ml", "oranges", "bags", "cartons", "units"
+  stock: number; // current amount, in `unit`
+  reorderLevel: number; // in `unit`
+  unitCostCents: number; // price of one pack
+  packName: string; // what you buy: "bags", "bottles", "crates" (same as `unit` for single units)
+  packSize: number; // `unit`s in one pack: 1 bag of beans = 1000 g
+  fullQty: number | null; // a full container, for "% full"; null = just a count
+  usedLast7Days: number; // taken out for drinks in the last 7 days, in `unit`
 }
 
 export interface StockMovement {

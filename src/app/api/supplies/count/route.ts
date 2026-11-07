@@ -1,10 +1,12 @@
 import { HttpError, dbOrMock, isCount, isUuid, readJson } from "@/lib/api";
 import { withTransaction } from "@/lib/db";
 import { mockSupplies } from "@/lib/mock-data";
+import { getSupply } from "@/lib/queries";
 import type { InventoryItem } from "@/lib/types";
 
 // POST /api/supplies/count  { inventoryItemId, stock }  ->  the updated InventoryItem
-// Records how many of a back-room item there really are. The difference from the old number is
+// Records how much of a back-room item there really is, in its unit (grams of beans, ml of
+// lemonade, oranges, bags...). The difference from the old number is
 // written to the stock_movements ledger as an "adjustment", so the ledger always adds up.
 export function POST(request: Request) {
   return dbOrMock<InventoryItem>(
@@ -33,14 +35,7 @@ export function POST(request: Request) {
             [inventoryItemId, change],
           );
         }
-        const { rows } = await client.query<InventoryItem>(
-          `SELECT id, name, image_public_id AS "imagePublicId", category, unit,
-                  stock::float8 AS stock, reorder_level::float8 AS "reorderLevel",
-                  unit_cost_cents AS "unitCostCents"
-             FROM inventory_items WHERE id = $1`,
-          [inventoryItemId],
-        );
-        return rows[0];
+        return (await getSupply((sql, params) => client.query(sql, params), inventoryItemId))!;
       });
     },
   );

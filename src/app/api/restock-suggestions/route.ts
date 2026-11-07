@@ -8,6 +8,7 @@ import type { RestockSuggestion } from "@/lib/types";
 //   daysLeft     = full days the current stock covers (capped at 14)
 //   suggestedQty = expected sales over the next 7 days (or double the reorder level, if more) - stock
 // An item is suggested when it is at its reorder level or will run out within 3 days.
+// Food on the shelf only: drinks have no shelf stock (see lib/queries.ts listMenu).
 export function GET() {
   return dbOrMock(mockRestock, () =>
     query<RestockSuggestion>(
@@ -47,7 +48,8 @@ export function GET() {
                 f.days_left AS "daysLeft"
            FROM menu_items m
            JOIN forecast f ON f.menu_item_id = m.id
-          WHERE m.stock <= m.reorder_level OR f.days_left <= 3
+          WHERE m.category <> 'drink' -- shelf items only: drinks are made from back-room ingredients
+            AND (m.stock <= m.reorder_level OR f.days_left <= 3)
           ORDER BY f.days_left, m.name`,
     ),
   );

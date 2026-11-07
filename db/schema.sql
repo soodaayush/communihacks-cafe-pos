@@ -2,7 +2,7 @@
 -- Run: npm run db:schema   (safe to re-run: everything is IF NOT EXISTS)
 --
 -- Layout
---   Regular tables : menu_items, inventory_items, purchases, expenses
+--   Regular tables : menu_items, inventory_items, recipes, purchases, expenses
 --   Hypertables    : sales, sale_items, stock_movements   (time-series, append-mostly history)
 --   Aggregates     : sales_daily, sales_hourly, item_daily (continuous aggregates)
 
@@ -22,15 +22,34 @@ CREATE TABLE IF NOT EXISTS menu_items (
 
 -- Everything the cafe keeps in the back: ingredients and supplies (beans, milk, cups...).
 -- Separate from menu_items because you buy "2 bags of beans", but you sell "1 coffee".
+-- Drink ingredients are measured (grams, ml, oranges) so each cup size can use its own amount.
 CREATE TABLE IF NOT EXISTS inventory_items (
   id                  uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name                text    NOT NULL UNIQUE,
   category            text    NOT NULL CHECK (category IN ('ingredient', 'packaging', 'supply')),
-  unit                text    NOT NULL,                        -- plain counting words: 'bags', 'cartons', 'units'
-  stock               numeric(12, 2) NOT NULL DEFAULT 0,       -- current count, in `unit` (whole numbers)
-  reorder_level       numeric(12, 2) NOT NULL DEFAULT 0,
-  unit_cost_cents     integer NOT NULL DEFAULT 0 CHECK (unit_cost_cents >= 0),
-  image_public_id     text    NOT NULL DEFAULT ''
+  unit                text    NOT NULL,                        -- what `stock` counts: 'g', 'ml', 'oranges', 'bags', 'cartons', 'units'
+  stock               numeric(12, 2) NOT NULL DEFAULT 0,       -- current amount, in `unit`
+  reorder_level       numeric(12, 2) NOT NULL DEFAULT 0,       -- in `unit`
+  unit_cost_cents     integer NOT NULL DEFAULT 0 CHECK (unit_cost_cents >= 0), -- price of ONE PACK
+  image_public_id     text    NOT NULL DEFAULT '',
+  pack_name           text    NOT NULL DEFAULT '',             -- what you buy: 'bags', 'bottles', 'crates' ('' = same as unit)
+  pack_size           numeric(12, 2) NOT NULL DEFAULT 1 CHECK (pack_size > 0), -- `unit`s in one pack (1 bag = 1000 g)
+  full_qty            numeric(12, 2) CHECK (full_qty > 0)      -- a full container, for "% full" (NULL = just a count)
+);
+-- Databases created before drinks were made from ingredients: add the new columns.
+ALTER TABLE inventory_items ADD COLUMN IF NOT EXISTS pack_name text NOT NULL DEFAULT '';
+ALTER TABLE inventory_items ADD COLUMN IF NOT EXISTS pack_size numeric(12, 2) NOT NULL DEFAULT 1 CHECK (pack_size > 0);
+ALTER TABLE inventory_items ADD COLUMN IF NOT EXISTS full_qty numeric(12, 2) CHECK (full_qty > 0);
+
+-- What one drink of each size uses from the back room, e.g. a large coffee = 22 g of beans + 1 cup
+-- + 1 lid. Selling a drink subtracts these amounts (see src/lib/sales.ts). Drinks have no shelf stock:
+-- how many can still be made is worked out from these and the back-room amounts.
+CREATE TABLE IF NOT EXISTS recipes (
+  menu_item_id      uuid           NOT NULL REFERENCES menu_items (id) ON DELETE CASCADE,
+  size              text           NOT NULL CHECK (size IN ('S', 'M', 'L')),
+  inventory_item_id uuid           NOT NULL REFERENCES inventory_items (id) ON DELETE CASCADE,
+  qty               numeric(12, 2) NOT NULL CHECK (qty > 0), -- in the inventory item's `unit`
+  PRIMARY KEY (menu_item_id, size, inventory_item_id)
 );
 
 -- Time-series table. A hypertable needs its time column in every unique key.
