@@ -1,11 +1,9 @@
-import { BILL_LABEL, monthName, type BudgetMonth } from "@/lib/budget";
+import { BILL_LABEL, dollars, monthName, type BudgetMonth } from "@/lib/budget";
 import type { ExpenseType } from "@/lib/types";
 
 const BILLS: ExpenseType[] = ["rent", "salary", "inventory", "other"];
 
 // Whole dollars, like the rest of the Money screen: fewer digits to read.
-const dollars = (cents: number) =>
-  `${cents < 0 ? "−" : ""}$${Math.round(Math.abs(cents) / 100).toLocaleString("en-CA")}`;
 
 /** This month in one sum: what last month left + what came in − what went out = what is left. */
 export function Budget({ months }: { months: BudgetMonth[] }) {

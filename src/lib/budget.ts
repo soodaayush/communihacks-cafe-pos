@@ -78,6 +78,24 @@ export async function getBudgetMonths(monthsBack = 2): Promise<BudgetMonth[]> {
   return buildMonths(summaries, expenses, STARTING_BALANCE_CENTS);
 }
 
+/**
+ * Break-even for one month, in cents. The bills it needs to cover = last month's real bills
+ * (its plan), or this month's bills so far if they already cost more.
+ */
+export function billsCover(m: BudgetMonth) {
+  const planned = m.planCents ? Object.values(m.planCents).reduce((a, b) => a + b, 0) : 0;
+  const needCents = Math.max(planned, m.outCents);
+  return {
+    needCents,
+    toGoCents: Math.max(0, needCents - m.inCents),
+    extraCents: Math.max(0, m.inCents - needCents),
+  };
+}
+
+/** Whole dollars, like the rest of the Money screen: fewer digits to read. */
+export const dollars = (cents: number): string =>
+  `${cents < 0 ? "−" : ""}$${Math.round(Math.abs(cents) / 100).toLocaleString("en-CA")}`;
+
 /** "2026-11" -> "November" */
 export const monthName = (month: string): string =>
   new Date(`${month}-01T00:00:00Z`).toLocaleString("en-CA", { month: "long", timeZone: "UTC" });

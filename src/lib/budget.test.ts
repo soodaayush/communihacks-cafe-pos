@@ -1,6 +1,6 @@
 // Run: npx tsx src/lib/budget.test.ts
 import assert from "node:assert/strict";
-import { buildMonths } from "./budget";
+import { billsCover, buildMonths } from "./budget";
 
 const months = buildMonths(
   [
@@ -29,4 +29,9 @@ assert.equal(months[1].spentCents.rent, 0);
 assert.equal(months[0].planCents, null);
 assert.deepEqual(months[1].planCents, { rent: 800, salary: 0, inventory: 0, other: 0 });
 assert.deepEqual(buildMonths([], [], 500), []);
+
+// Break-even: November's bills (4300 so far) already beat its plan (October's 800), so 4300 is needed.
+assert.deepEqual(billsCover(months[1]), { needCents: 4300, toGoCents: 2300, extraCents: 0 });
+// October has no plan, so its own bills (800) count; 1500 came in, 700 extra.
+assert.deepEqual(billsCover(months[0]), { needCents: 800, toGoCents: 0, extraCents: 700 });
 console.log("budget ok");

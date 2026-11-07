@@ -1,6 +1,7 @@
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { InsightList } from "@/components/insights/InsightList";
+import { BillsCover } from "@/components/money/BillsCover";
 import { BoughtList } from "@/components/money/BoughtList";
 import { Budget } from "@/components/money/Budget";
 import { MoneyInHand } from "@/components/money/MoneyInHand";
@@ -54,6 +55,7 @@ export default async function MoneyPage({
           <StaffBills label={RANGE_LABEL[range]} expenses={expenses} />
         </div>
         <Budget months={budget} />
+        <BillsCover month={budget.at(-1)} />
       </div>
     </div>
   );
