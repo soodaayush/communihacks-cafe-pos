@@ -6,7 +6,9 @@ const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? "";
 
 // TODO(dev3): pick transformations for item tiles (crop, size, rounded corners).
 export function imageUrl(publicId: string, size = 256): string {
-  if (!cloudName || !publicId) return PLACEHOLDER;
+  if (!publicId) return PLACEHOLDER;
+  // No Cloudinary account yet: use the demo drawings in public/images/menu/.
+  if (!cloudName) return `/images/menu/${publicId.split("/").pop()}.svg`;
   // VERIFY against docs: https://cloudinary.com/documentation/image_transformations
   return `https://res.cloudinary.com/${cloudName}/image/upload/c_fill,w_${size},h_${size},f_auto,q_auto/${publicId}`;
 }

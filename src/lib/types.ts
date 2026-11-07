@@ -122,6 +122,47 @@ export interface SpeakResponse {
   text: string;
 }
 
+// Insights: numbers are computed in code (src/lib/metrics.ts); Gemini only picks and phrases.
+export type InsightTone = "good" | "watch" | "neutral";
+
+export type MetricKey =
+  | "moneyLeft"
+  | "moneyLeftChange"
+  | "bestSeller"
+  | "bestEarner"
+  | "slowSeller"
+  | "lowStock"
+  | "runningOut"
+  | "biggestCost";
+
+export interface Metric {
+  key: MetricKey;
+  tone: InsightTone;
+  /** Plain-English fact with the exact numbers. Source of truth for any wording. */
+  fact: string;
+  valueCents?: number;
+  count?: number;
+  menuItemId?: string;
+}
+
+export interface Insight {
+  metricKey: MetricKey;
+  tone: InsightTone;
+  icon: string; // one emoji
+  headline: string; // a few words
+  sentence: string; // one short sentence, speakable
+  valueCents?: number;
+  count?: number;
+  menuItemId?: string;
+}
+
+export interface InsightsResponse {
+  range: SummaryRange;
+  source: "gemini" | "local";
+  insights: Insight[];
+  metrics: Metric[];
+}
+
 export interface ImageSignResponse {
   cloudName: string;
   apiKey: string;

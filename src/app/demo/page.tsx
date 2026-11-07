@@ -32,7 +32,7 @@ async function loadSnapshot(): Promise<Snapshot> {
     get<RestockSuggestion[]>("/api/restock-suggestions"),
     get<MenuItem[]>("/api/menu"),
     get<TigerStats>("/api/demo/tiger"),
-    get<Insights>("/api/insights"),
+    get<Insights>("/api/demo/stats"),
   ]);
   return { today: summary[0], hours, restock, menu, tiger, insights };
 }

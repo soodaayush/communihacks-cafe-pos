@@ -1,4 +1,4 @@
-// Payloads for the demo/showcase endpoints (/api/demo/*, /api/insights).
+// Payloads for the demo/showcase endpoints (/api/demo/*).
 
 export interface HypertableStats {
   name: string;
