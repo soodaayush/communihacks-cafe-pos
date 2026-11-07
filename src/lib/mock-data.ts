@@ -92,14 +92,37 @@ export const mockRestock: RestockSuggestion[] = [
   { menuItemId: "m4", stock: 3, reorderLevel: 8, suggestedQty: 24 },
 ];
 
-const DAYS: Record<SummaryRange, number> = { day: 1, week: 7, month: 30 };
+export const RANGE_DAYS: Record<SummaryRange, number> = { day: 1, week: 7, month: 30 };
 
-export function mockSummary(range: SummaryRange): DaySummary[] {
-  return Array.from({ length: DAYS[range] }, (_, i) => ({
-    date: new Date(Date.UTC(2026, 10, 7 - i)).toISOString().slice(0, 10),
-    moneyInCents: 12000,
-    moneyOutCents: 7000,
-    leftCents: 5000,
-    profitCents: 5000,
-  }));
+const dayString = (daysAgo: number) =>
+  new Date(Date.UTC(2026, 10, 7 - daysAgo)).toISOString().slice(0, 10);
+
+/** Newest first. offsetDays shifts the window back (use RANGE_DAYS[range] for the previous period). */
+export function mockSummary(range: SummaryRange, offsetDays = 0): DaySummary[] {
+  return Array.from({ length: RANGE_DAYS[range] }, (_, i) => {
+    const daysAgo = i + offsetDays;
+    const moneyInCents = 11000 + ((daysAgo * 37) % 9) * 300 - Math.min(daysAgo, 30) * 20;
+    const moneyOutCents = 7000 + ((daysAgo * 13) % 5) * 200;
+    const leftCents = moneyInCents - moneyOutCents;
+    return {
+      date: dayString(daysAgo),
+      moneyInCents,
+      moneyOutCents,
+      leftCents,
+      profitCents: leftCents,
+    };
+  });
+}
+
+const BASE_DAILY_QTY: Record<string, number> = { m1: 24, m2: 6, m3: 10, m4: 9 };
+
+/** Qty sold per item per day, newest first. */
+export function mockItemSales(range: SummaryRange, offsetDays = 0): TrendPoint[] {
+  return Array.from({ length: RANGE_DAYS[range] }, (_, i) => i + offsetDays).flatMap((daysAgo) =>
+    mockMenu.map((item, idx) => ({
+      date: dayString(daysAgo),
+      menuItemId: item.id,
+      qtySold: Math.max(0, BASE_DAILY_QTY[item.id] + ((daysAgo * 7 + idx * 3) % 5) - 2),
+    })),
+  );
 }
