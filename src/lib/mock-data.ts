@@ -105,10 +105,14 @@ export const mockSupplies: InventoryItem[] = [
     name: "Coffee beans",
     imagePublicId: "kwhab/inventory/coffee-beans",
     category: "ingredient",
-    unit: "bags",
-    stock: 6,
-    reorderLevel: 3,
+    unit: "g",
+    stock: 1800,
+    reorderLevel: 700,
     unitCostCents: 1800,
+    packName: "bags",
+    packSize: 1000,
+    fullQty: 4000,
+    usedLast7Days: 2400,
   },
   {
     id: "i2",
@@ -119,6 +123,10 @@ export const mockSupplies: InventoryItem[] = [
     stock: 150,
     reorderLevel: 100,
     unitCostCents: 8,
+    packName: "units",
+    packSize: 1,
+    fullQty: null,
+    usedLast7Days: 260,
   },
 ];
 

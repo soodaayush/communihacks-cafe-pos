@@ -7,6 +7,8 @@ export interface StockLevelProps {
   capacity?: number;
   /** Force "Running low", e.g. when the forecast says it runs out soon. */
   low?: boolean;
+  /** Extra words on the right of the label, e.g. "35% full". */
+  note?: string;
 }
 
 type Level = "out" | "low" | "ok";
@@ -18,7 +20,7 @@ const LOOK: Record<Level, { bar: string; icon: IconName; label: string }> = {
   ok: { bar: "bg-sage", icon: "check", label: "Plenty" },
 };
 
-export function StockLevel({ stock, reorderLevel, capacity, low = false }: StockLevelProps) {
+export function StockLevel({ stock, reorderLevel, capacity, low = false, note }: StockLevelProps) {
   const level: Level = stock <= 0 ? "out" : low || stock <= reorderLevel ? "low" : "ok";
   const look = LOOK[level];
   const max = Math.max(capacity ?? reorderLevel * 4, stock, 1);
@@ -38,6 +40,7 @@ export function StockLevel({ stock, reorderLevel, capacity, low = false }: Stock
           <Icon name={look.icon} className="size-4" />
         </span>
         {look.label}
+        {note && <span className="ml-auto text-ink-soft tabular-nums">{note}</span>}
       </p>
     </div>
   );

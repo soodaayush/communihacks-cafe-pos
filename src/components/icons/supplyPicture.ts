@@ -3,9 +3,11 @@ import type { IconName } from "@/components/icons/Icon";
 // One picture per thing in the back, shared by Stock and Money. Anything new gets a crate.
 const PICTURE: Record<string, IconName> = {
   "Coffee beans": "coffeeBeans",
-  Milk: "milk",
-  "Tea bags": "teaBox",
+  "Tea leaves": "teaLeaves",
   "Cocoa powder": "cocoa",
+  Milk: "milk",
+  Lemonade: "lemonade",
+  Oranges: "oranges",
   Flour: "flour",
   Sugar: "sugar",
   Eggs: "eggs",
@@ -13,7 +15,6 @@ const PICTURE: Record<string, IconName> = {
   "Paper cups": "cups",
   "Cup lids": "lids",
   Napkins: "napkins",
-  "Cleaning spray": "spray",
 };
 
 export const pictureFor = (name: string): IconName => PICTURE[name] ?? "crate";

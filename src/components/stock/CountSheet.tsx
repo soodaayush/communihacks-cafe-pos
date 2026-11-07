@@ -14,13 +14,29 @@ export interface CountSheetProps {
   /** Called with the new count. Reject to show the "could not save" message. */
   onSave: (count: number) => Promise<void>;
   onClose: () => void;
+  /** How much one tap of − / + changes, e.g. 50 for grams. Default 1. */
+  stepBy?: number;
+  /** The amount in plain words under the number, e.g. (1400) => "1.4 kg". */
+  describe?: (n: number) => string;
+  /** Default "How many are there?". */
+  question?: string;
 }
 
 const MAX = 99_999;
 
 // "How many are there?" Big − and + buttons, or type the number. Native <dialog> gives us the
 // backdrop, focus handling and the Escape key.
-export function CountSheet({ name, picture, unit, current, onSave, onClose }: CountSheetProps) {
+export function CountSheet({
+  name,
+  picture,
+  unit,
+  current,
+  onSave,
+  onClose,
+  stepBy = 1,
+  describe,
+  question = "How many are there?",
+}: CountSheetProps) {
   const ref = useRef<HTMLDialogElement>(null);
   const [text, setText] = useState(String(current));
   const [saving, setSaving] = useState(false);
@@ -65,16 +81,16 @@ export function CountSheet({ name, picture, unit, current, onSave, onClose }: Co
             <h2 id="count-title" className="text-2xl font-bold">
               {name}
             </h2>
-            <p className="text-lg text-ink-soft">How many are there?</p>
+            <p className="text-lg text-ink-soft">{question}</p>
           </div>
         </div>
 
         <div className="flex items-center justify-between gap-3">
           <button
             type="button"
-            aria-label="One less"
+            aria-label={`${stepBy} less`}
             disabled={saving || count <= 0}
-            onClick={() => step(-1)}
+            onClick={() => step(-stepBy)}
             className={round}
           >
             −
@@ -92,13 +108,16 @@ export function CountSheet({ name, picture, unit, current, onSave, onClose }: Co
               onFocus={(e) => e.target.select()}
               className="w-full rounded-tile bg-cream py-2 text-center text-hero font-bold tabular-nums ring-1 ring-ink/15"
             />
-            <span className="mt-1 text-lg text-ink-soft">{unit}</span>
+            <span className="mt-1 text-lg text-ink-soft">
+              {unit}
+              {describe && valid && ` = ${describe(count)}`}
+            </span>
           </label>
           <button
             type="button"
-            aria-label="One more"
+            aria-label={`${stepBy} more`}
             disabled={saving || count >= MAX}
-            onClick={() => step(1)}
+            onClick={() => step(stepBy)}
             className={round}
           >
             +

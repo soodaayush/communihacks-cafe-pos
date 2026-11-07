@@ -221,7 +221,7 @@ export async function getFlowByDay(days: number): Promise<DayFlow[]> {
        SELECT day, sum(cents)::int AS cents
          FROM (
            SELECT (m.created_at AT TIME ZONE 'UTC')::date AS day,
-                  m.change_qty * i.unit_cost_cents        AS cents
+                  m.change_qty / i.pack_size * i.unit_cost_cents AS cents -- packs x pack price
              FROM stock_movements m
              JOIN inventory_items i ON i.id = m.inventory_item_id
             WHERE m.reason = 'purchase'
@@ -249,14 +249,14 @@ export async function getBought(days: number): Promise<BoughtLine[]> {
        FROM (
          SELECT i.name,
                 'supply'                                      AS kind,
-                round(sum(m.change_qty))::int                 AS qty,
-                i.unit,
-                round(sum(m.change_qty * i.unit_cost_cents))::int AS cost_cents
+                round(sum(m.change_qty / i.pack_size))::int   AS qty, -- in packs: "2 bags"
+                coalesce(nullif(i.pack_name, ''), i.unit)     AS unit,
+                round(sum(m.change_qty / i.pack_size * i.unit_cost_cents))::int AS cost_cents
            FROM stock_movements m
            JOIN inventory_items i ON i.id = m.inventory_item_id
           WHERE m.reason = 'purchase'
             AND m.created_at >= $1::timestamptz AND m.created_at < $2::timestamptz
-          GROUP BY i.name, i.unit
+          GROUP BY i.name, i.pack_name, i.unit
        ) b
       ORDER BY cost_cents DESC, name`,
     [start.toISOString(), end.toISOString()],

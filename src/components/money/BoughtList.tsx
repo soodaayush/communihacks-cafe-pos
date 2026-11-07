@@ -6,15 +6,15 @@ import { Icon } from "@/components/icons/Icon";
 import { pictureFor } from "@/components/icons/supplyPicture";
 import { formatCents, formatDollars } from "@/lib/money";
 import type { BoughtLine } from "@/lib/money-data";
+import { formatAmount, unitOf } from "@/lib/units";
 import { BuySheet } from "./BuySheet";
 
 // Small buys (a few cups) would round to "$0": show cents below a dollar.
 // Exact amounts for single purchases: a $1.50 carton must not read as "$2". Whole dollars stay short.
 export const money = (cents: number) =>
   cents % 100 === 0 ? formatDollars(cents) : formatCents(cents);
-// Units are plain words ("bags", "cartons", "units"): "1 bag", "3 bags".
-export const unitOf = (n: number, unit: string) =>
-  Math.round(n) === 1 ? unit.replace(/s$/, "") : unit;
+// Units are plain words ("bags", "cartons", "units"): "1 bag", "3 bags". Shared with lib/units.
+export { unitOf };
 
 /** What the café bought in the period, with a big button to add something new. */
 export function BoughtList({ label, lines }: { label: string; lines: BoughtLine[] }) {
@@ -69,7 +69,7 @@ export function BoughtList({ label, lines }: { label: string; lines: BoughtLine[
         >
           <Icon name="check" className="size-8" />
           <span>
-            {saved.name}: now {saved.stock} {unitOf(saved.stock, saved.unit)} in stock
+            {saved.name}: now {formatAmount(saved.stock, saved.stockUnit)} in stock
           </span>
         </p>
       )}
