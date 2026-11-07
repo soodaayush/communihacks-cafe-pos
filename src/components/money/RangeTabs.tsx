@@ -8,7 +8,7 @@ export const RANGE_LABEL: Record<MoneyRange, string> = {
 };
 const ICON: Record<MoneyRange, string> = { day: "☀️", week: "🗓️" };
 
-/** Today / This week, styled like the What-if tabs. Today comes first: the shift they just worked. */
+/** Today / This week as big tabs. Today comes first: the shift they just worked. */
 export function RangeTabs({ range }: { range: MoneyRange }) {
   return (
     <nav aria-label="Time" className="flex shrink-0 gap-3">

@@ -105,7 +105,7 @@ export interface StockPoint {
 }
 
 export interface ExplainRequest {
-  topic: "money" | "whatif" | "trends";
+  topic: "money" | "trends";
   numbers: Record<string, number>;
 }
 

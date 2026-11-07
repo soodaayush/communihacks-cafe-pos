@@ -1,5 +1,5 @@
 import { SpeakButton } from "@/components/voice/SpeakButton";
-import { MiniJar, MoneyBar, Person } from "@/components/whatif/pictures";
+import { MiniJar, MoneyBar, Person } from "./pictures";
 import { formatDollars } from "@/lib/money";
 
 export interface MoneyInOutLeftProps {
@@ -31,7 +31,7 @@ export function CostIcon({ className = "size-9" }: { className?: string }) {
 }
 
 /**
- * The core lesson, with exactly the same picture as What-if: all the money customers paid is
+ * The core lesson, as one picture: all the money customers paid is
  * one bar. The pink part paid for making what they bought; the green part is what you keep.
  * Whole dollars only. Rent and wages are a staff topic (see StaffBills).
  */

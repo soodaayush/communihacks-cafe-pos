@@ -132,7 +132,7 @@ export interface DayKept {
 
 /**
  * Last `days` UTC days, newest first, zeros for quiet days. Both numbers come from item_daily
- * (revenue and cost of goods per item), so "kept" = in - cost means exactly what What-if shows:
+ * (revenue and cost of goods per item), so "kept" = in - cost:
  * part of each sale buys the item, the rest is yours. Rent and wages are not in here.
  */
 export async function getKeptByDay(days: number): Promise<DayKept[]> {
