@@ -21,13 +21,13 @@ CREATE TABLE IF NOT EXISTS menu_items (
 );
 
 -- Everything the cafe keeps in the back: ingredients and supplies (beans, milk, cups...).
--- Separate from menu_items because you buy "2 kg of beans", but you sell "1 coffee".
+-- Separate from menu_items because you buy "2 bags of beans", but you sell "1 coffee".
 CREATE TABLE IF NOT EXISTS inventory_items (
   id                  uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name                text    NOT NULL UNIQUE,
   category            text    NOT NULL CHECK (category IN ('ingredient', 'packaging', 'supply')),
-  unit                text    NOT NULL,                        -- 'kg', 'L', 'pcs' ...
-  stock               numeric(12, 2) NOT NULL DEFAULT 0,       -- current amount, in `unit`
+  unit                text    NOT NULL,                        -- plain counting words: 'bags', 'cartons', 'units'
+  stock               numeric(12, 2) NOT NULL DEFAULT 0,       -- current count, in `unit` (whole numbers)
   reorder_level       numeric(12, 2) NOT NULL DEFAULT 0,
   unit_cost_cents     integer NOT NULL DEFAULT 0 CHECK (unit_cost_cents >= 0),
   image_public_id     text    NOT NULL DEFAULT ''

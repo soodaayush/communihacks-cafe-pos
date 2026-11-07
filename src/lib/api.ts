@@ -45,3 +45,7 @@ export async function readJson(request: Request): Promise<Record<string, unknown
   }
   throw new HttpError("Body must be a JSON object");
 }
+
+/** A stock count: a whole number from 0 to 99,999. */
+export const isCount = (v: unknown): v is number =>
+  Number.isInteger(v) && (v as number) >= 0 && (v as number) <= 99_999;

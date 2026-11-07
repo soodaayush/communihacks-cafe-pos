@@ -2,7 +2,10 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { BackRoom } from "@/components/stock/BackRoom";
+import { CountSheet } from "@/components/stock/CountSheet";
 import { StockLevel } from "@/components/stock/StockLevel";
+import { Trends } from "@/components/stock/Trends";
 import { imageUrl } from "@/lib/integrations/cloudinary";
 import type { MenuItem, RestockSuggestion, TrendPoint } from "@/lib/types";
 
@@ -11,11 +14,23 @@ import type { MenuItem, RestockSuggestion, TrendPoint } from "@/lib/types";
 const getJson = <T,>(url: string): Promise<T> =>
   fetch(url).then((r) => (r.ok ? r.json() : Promise.reject(new Error(url))));
 
+type View = "shelf" | "back" | "trends";
+
+// One idea per view, so the screen never gets crowded.
+const VIEWS: { id: View; icon: string; label: string }[] = [
+  { id: "shelf", icon: "🧁", label: "Shelf" },
+  { id: "back", icon: "📦", label: "In the back" },
+  { id: "trends", icon: "📈", label: "Trends" },
+];
+
 export default function StockPage() {
   const [menu, setMenu] = useState<MenuItem[] | null>(null);
   const [restock, setRestock] = useState<RestockSuggestion[]>([]);
   const [trends, setTrends] = useState<TrendPoint[]>([]);
   const [loadFailed, setLoadFailed] = useState(false);
+  const [view, setView] = useState<View>("shelf");
+  const [counting, setCounting] = useState<MenuItem | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   function load() {
     Promise.all([
@@ -31,6 +46,19 @@ export default function StockPage() {
       .catch(() => setLoadFailed(true));
   }
   useEffect(load, []);
+
+  async function saveCount(item: MenuItem, count: number) {
+    const res = await fetch("/api/inventory/count", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ menuItemId: item.id, stock: count }),
+    });
+    if (!res.ok) throw new Error("save failed");
+    setCounting(null);
+    setNotice(`✓ Saved: ${item.name} ${count} left`);
+    setTimeout(() => setNotice(null), 4000);
+    load();
+  }
 
   if (!menu) {
     return (
@@ -59,7 +87,6 @@ export default function StockPage() {
   // Selling pace = sold in the last 7 days of the trend, per day.
   const dates = [...new Set(trends.map((t) => t.date))].sort();
   const lastWeek = new Set(dates.slice(-7));
-  const last4Weeks = new Set(dates.slice(-28));
   const perDay = (id: string) =>
     trends
       .filter((t) => t.menuItemId === id && lastWeek.has(t.date))
@@ -68,91 +95,105 @@ export default function StockPage() {
   // Items the server says to reorder (at the reorder level or running out within 3 days).
   const runningLow = new Set(restock.map((s) => s.menuItemId));
 
-  const sold = menu
-    .map((m) => ({
-      item: m,
-      qty: trends
-        .filter((t) => t.menuItemId === m.id && last4Weeks.has(t.date))
-        .reduce((s, t) => s + t.qtySold, 0),
-    }))
-    .sort((a, b) => b.qty - a.qty);
-  const maxSold = Math.max(1, ...sold.map((s) => s.qty));
-
   return (
-    <div className="flex flex-col gap-6 lg:grid lg:h-full lg:grid-cols-[1fr_minmax(22rem,26rem)]">
-      <div className="flex flex-col gap-6 lg:overflow-y-auto lg:pr-1">
-        <section
-          aria-label="Shelf"
-          className="grid auto-rows-max gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
-        >
-          {menu.map((item) => (
-            <div
-              key={item.id}
-              className="flex flex-col gap-3 rounded-tile bg-white p-4 ring-1 ring-ink/10"
-            >
-              <div className="flex items-center gap-3">
-                <Image
-                  src={imageUrl(item.imagePublicId, 96)}
-                  alt=""
-                  width={56}
-                  height={56}
-                  unoptimized
-                  className="size-14"
-                />
-                <p className="flex-1 text-xl font-semibold">{item.name}</p>
-                <p className="text-right">
-                  <span className="block text-number leading-none font-bold tabular-nums">
-                    {item.stock}
-                  </span>
-                  <span className="text-base text-ink-soft">left</span>
-                </p>
-              </div>
-              <StockLevel
-                stock={item.stock}
-                reorderLevel={item.reorderLevel}
-                low={runningLow.has(item.id)}
-                capacity={Math.ceil(perDay(item.id) * 7)}
-              />
-            </div>
-          ))}
-        </section>
+    <div className="flex flex-col gap-6 lg:h-full">
+      <div role="tablist" aria-label="Stock views" className="grid grid-cols-3 gap-3">
+        {VIEWS.map((v) => (
+          <button
+            key={v.id}
+            type="button"
+            role="tab"
+            aria-selected={view === v.id}
+            onClick={() => setView(v.id)}
+            className={`flex min-h-touch items-center justify-center gap-3 rounded-tile text-xl font-semibold ring-1 ${view === v.id ? "bg-white ring-ink/15" : "bg-white/40 text-ink-soft ring-transparent"}`}
+          >
+            <span aria-hidden className="text-3xl">
+              {v.icon}
+            </span>
+            <span>{v.label}</span>
+          </button>
+        ))}
       </div>
 
-      <section
-        aria-labelledby="best-sellers"
-        className="self-start rounded-tile bg-white p-5 ring-1 ring-ink/10"
-      >
-        <h2 id="best-sellers" className="text-2xl font-bold">
-          Best sellers
-        </h2>
-        <p className="mb-4 text-lg text-ink-soft">How many sold in the last 4 weeks</p>
-        <ol className="flex flex-col gap-2">
-          {sold.map(({ item, qty }) => (
-            <li
-              key={item.id}
-              className="grid grid-cols-[2.5rem_8.5rem_1fr_3rem] items-center gap-2"
-              title={`${item.name}: ${qty} sold`}
-            >
-              <Image
-                src={imageUrl(item.imagePublicId, 96)}
-                alt=""
-                width={40}
-                height={40}
-                unoptimized
-                className="size-10"
-              />
-              <span className="truncate text-lg">{item.name}</span>
-              <span className="h-5 rounded-r bg-ink/5" aria-hidden>
-                <span
-                  className="block h-full rounded-r bg-sky"
-                  style={{ width: `${(qty / maxSold) * 100}%` }}
+      {notice && (
+        <p role="status" className="rounded-tile bg-sage/60 p-3 text-center text-xl font-semibold">
+          {notice}
+        </p>
+      )}
+
+      {view === "shelf" && (
+        <div className="lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pr-1">
+          <section
+            aria-label="Shelf"
+            className="grid auto-rows-max gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4"
+          >
+            {menu.map((item) => (
+              <div
+                key={item.id}
+                className="flex flex-col gap-3 rounded-tile bg-white p-4 ring-1 ring-ink/10"
+              >
+                <div className="flex items-center gap-3">
+                  <Image
+                    src={imageUrl(item.imagePublicId, 96)}
+                    alt=""
+                    width={56}
+                    height={56}
+                    unoptimized
+                    className="size-14"
+                  />
+                  <p className="flex-1 text-xl font-semibold">{item.name}</p>
+                  <p className="text-right">
+                    <span className="block text-number leading-none font-bold tabular-nums">
+                      {item.stock}
+                    </span>
+                    <span className="text-base text-ink-soft">left</span>
+                  </p>
+                </div>
+                <StockLevel
+                  stock={item.stock}
+                  reorderLevel={item.reorderLevel}
+                  low={runningLow.has(item.id)}
+                  capacity={Math.ceil(perDay(item.id) * 7)}
                 />
-              </span>
-              <span className="text-right text-lg font-bold tabular-nums">{qty}</span>
-            </li>
-          ))}
-        </ol>
-      </section>
+                <button
+                  type="button"
+                  aria-label={`Count ${item.name}`}
+                  onClick={() => setCounting(item)}
+                  className="min-h-12 rounded-tile bg-cream text-lg font-semibold ring-1 ring-ink/15"
+                >
+                  ✏️ Count
+                </button>
+              </div>
+            ))}
+          </section>
+        </div>
+      )}
+      {counting && (
+        <CountSheet
+          key={counting.id}
+          name={counting.name}
+          picture={
+            <Image
+              src={imageUrl(counting.imagePublicId, 96)}
+              alt=""
+              width={56}
+              height={56}
+              unoptimized
+              className="size-14"
+            />
+          }
+          unit="left"
+          current={counting.stock}
+          onSave={(n) => saveCount(counting, n)}
+          onClose={() => setCounting(null)}
+        />
+      )}
+      {view === "back" && (
+        <div className="w-full max-w-4xl">
+          <BackRoom />
+        </div>
+      )}
+      {view === "trends" && <Trends menu={menu} trends={trends} />}
     </div>
   );
 }

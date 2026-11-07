@@ -20,6 +20,8 @@ No env vars are needed to start: every API route returns mock data. Copy `.env.e
 
 Tiger Data features in use: hypertables with columnstore compression (`sales`, `sale_items`, `stock_movements`), real-time continuous aggregates (`sales_daily`, `sales_hourly`, `item_daily`) with refresh policies, and `time_bucket_gapfill` for charts with no holes. Also: `/api/busy-hours` (sales by hour of day), `/api/supplies/history?itemId=` (stock level over time) and a weekday-aware `/api/restock-suggestions` (with `daysLeft`).
 
+Stock counts: `POST /api/inventory/count` (shelf items) and `POST /api/supplies/count` (back room; the change is logged in `stock_movements` as an adjustment). The Stock tab's "✏️ Count" buttons use them.
+
 Back-room stock (ingredients, packaging, supplies) is at `/api/supplies`; stock changes are logged via `POST /api/supplies/movements`. `/api/inventory` and `/api/menu` are the sellable items.
 
 ## Where things go
