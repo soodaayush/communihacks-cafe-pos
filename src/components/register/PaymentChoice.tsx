@@ -443,24 +443,29 @@ export function PaymentChoice({ items, totalCents, onPaid, onClose }: PaymentCho
           </span>
           <h2 className="text-3xl font-bold">Sale done</h2>
 
-          {/* The teaching moment: where this sale's money goes. */}
-          <div className="w-full max-w-xl rounded-tile bg-white p-6 text-left ring-1 ring-ink/10">
-            <p className="mb-4 flex items-center gap-3 text-xl">
-              {method === "cash" ? (
-                <>
-                  <MoneyPiece cents={500} /> The money is in the cash drawer.
-                </>
-              ) : (
-                <>
-                  <CardPicture className="h-10 shrink-0" /> The money is in the café&apos;s bank.
-                </>
-              )}
-            </p>
-            <p className="flex items-baseline justify-between text-xl">
-              They paid
-              <span className="text-2xl font-bold tabular-nums">{formatCents(totalCents)}</span>
-            </p>
-          </div>
+          {/* Receipt-style summary: what came in, what went back, what the café keeps. */}
+          <dl className="grid w-full max-w-xl grid-cols-[1fr_auto] gap-x-4 gap-y-3 rounded-tile bg-white p-6 text-left text-xl ring-1 ring-ink/10">
+            <dt>{method === "cash" ? "They paid (cash)" : "They paid (card)"}</dt>
+            <dd className="text-right font-bold tabular-nums">
+              {formatCents(method === "cash" ? got : totalCents)}
+            </dd>
+            <dt>They got back</dt>
+            <dd className="text-right font-bold tabular-nums">
+              − {formatCents(method === "cash" ? change : 0)}
+            </dd>
+            <div aria-hidden className="col-span-2 border-t border-ink/10" />
+            <dt className="self-center font-semibold">You got</dt>
+            {/* Paid − got back = what the café keeps, with the answer highlighted. */}
+            <dd className="flex flex-wrap items-center justify-end gap-2 tabular-nums">
+              <span className="text-lg text-ink-soft">
+                {formatCents(method === "cash" ? got : totalCents)} −{" "}
+                {formatCents(method === "cash" ? change : 0)} =
+              </span>
+              <span className="rounded-full bg-sage px-4 py-1 text-2xl font-bold">
+                {formatCents(method === "cash" ? due : totalCents)}
+              </span>
+            </dd>
+          </dl>
 
           <button
             type="button"
