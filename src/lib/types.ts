@@ -1,0 +1,96 @@
+// Shared contract. Money is always whole cents (integers). Change only with team agreement.
+
+export type PaymentMethod = "cash" | "debit";
+export type ExpenseType = "rent" | "salary" | "inventory" | "other";
+export type SummaryRange = "day" | "week" | "month";
+
+export interface MenuItem {
+  id: string;
+  name: string;
+  imagePublicId: string;
+  category: string;
+  priceCents: number;
+  costCents: number;
+  stock: number;
+  reorderLevel: number;
+}
+
+export interface SaleItem {
+  menuItemId: string;
+  qty: number;
+  unitPriceCents: number;
+  unitCostCents: number;
+}
+
+export interface Sale {
+  id: string;
+  createdAt: string; // ISO 8601
+  paymentMethod: PaymentMethod;
+  totalCents: number;
+  items: SaleItem[];
+}
+
+export interface Expense {
+  id: string;
+  type: ExpenseType;
+  amountCents: number;
+  date: string; // YYYY-MM-DD
+}
+
+export interface Purchase {
+  id: string;
+  menuItemId: string;
+  qty: number;
+  totalCostCents: number;
+  paymentMethod: PaymentMethod;
+  createdAt: string; // ISO 8601
+}
+
+export interface DaySummary {
+  date: string; // YYYY-MM-DD
+  moneyInCents: number;
+  moneyOutCents: number;
+  leftCents: number;
+  profitCents: number;
+}
+
+// API payloads not covered by the contract above.
+// TODO(dev1): confirm these shapes with dev2/dev3.
+export interface TrendPoint {
+  date: string;
+  menuItemId: string;
+  qtySold: number;
+}
+
+export interface RestockSuggestion {
+  menuItemId: string;
+  stock: number;
+  reorderLevel: number;
+  suggestedQty: number;
+}
+
+export interface ExplainRequest {
+  topic: "money" | "whatif" | "trends";
+  numbers: Record<string, number>;
+}
+
+export interface ExplainResponse {
+  text: string;
+}
+
+export interface SpeakRequest {
+  text: string;
+}
+
+export interface SpeakResponse {
+  engine: "browser";
+  text: string;
+}
+
+export interface ImageSignResponse {
+  cloudName: string;
+  apiKey: string;
+  timestamp: number;
+  signature: string;
+  folder: string;
+}

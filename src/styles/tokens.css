@@ -1,0 +1,30 @@
+/* Design tokens. Tailwind v4 reads @theme, so each token becomes a utility:
+   bg-sage, text-ink, min-h-touch, min-w-touch, gap-gap, text-number, rounded-tile ... */
+@theme {
+  /* Calm pastel, muted palette */
+  --color-cream: #faf6ef;
+  --color-ink: #4a4a55;
+  --color-ink-soft: #8a8a96;
+  --color-sage: #b8d4c0;
+  --color-sky: #b9d3e6;
+  --color-blush: #f0c8c4;
+  --color-butter: #f3e3ad;
+  --color-lavender: #d4cbe8;
+
+  /* Meaning (always paired with a picture, never colour alone) */
+  --color-money-in: var(--color-sage);
+  --color-money-out: var(--color-blush);
+  --color-money-left: var(--color-sky);
+  --color-stock-low: var(--color-butter);
+
+  /* Minimum size for anything tappable */
+  --spacing-touch: 4.5rem; /* 72px */
+  --spacing-gap: 1.5rem;
+
+  /* Few words, large */
+  --text-label: 1.5rem;
+  --text-number: 2.5rem;
+  --text-hero: 4rem;
+
+  --radius-tile: 1.5rem;
+}
