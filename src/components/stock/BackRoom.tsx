@@ -19,7 +19,7 @@ const PICTURE: Record<string, string> = {
   Flour: "🌾",
   Sugar: "🍬",
   Eggs: "🥚",
-  "Bread loaves": "🍞",
+  Bread: "🍞",
   "Paper cups": "🥤",
   "Cup lids": "⭕",
   Napkins: "🧻",
@@ -32,7 +32,9 @@ const FALLBACK: Record<InventoryItem["category"], string> = {
 };
 const pictureOf = (i: InventoryItem) => PICTURE[i.name] ?? FALLBACK[i.category];
 
-const amount = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
+const amount = (n: number) => String(Math.round(n));
+// Units are plain words ("bags", "cartons", "units"): "1 bag", "3 bags".
+const unitOf = (n: number, unit: string) => (Math.round(n) === 1 ? unit.replace(/s$/, "") : unit);
 
 function History({ item, points }: { item: InventoryItem; points: StockPoint[] }) {
   const W = 300;
@@ -46,13 +48,13 @@ function History({ item, points }: { item: InventoryItem; points: StockPoint[] }
   return (
     <div className="rounded-tile bg-cream p-4">
       <p className="mb-2 text-lg font-semibold">
-        {pictureOf(item)} {item.name} over 30 days
+        {pictureOf(item)} {item.name}: last 30 days
       </p>
       <svg
         viewBox={`0 0 ${W} ${H}`}
         className="h-28 w-full"
         role="img"
-        aria-label={`${item.name} went from ${amount(first.stock)} to ${amount(last.stock)} ${item.unit}`}
+        aria-label={`${item.name} went from ${amount(first.stock)} to ${amount(last.stock)} ${unitOf(last.stock, item.unit)}`}
         preserveAspectRatio="none"
       >
         <polygon points={`0,${H} ${line} ${W},${H}`} className="fill-sky/60" />
@@ -75,10 +77,10 @@ function History({ item, points }: { item: InventoryItem; points: StockPoint[] }
       </svg>
       <p className="mt-2 flex justify-between text-lg text-ink-soft">
         <span>
-          30 days ago: {amount(first.stock)} {item.unit}
+          30 days ago: {amount(first.stock)} {unitOf(first.stock, item.unit)}
         </span>
         <span>
-          Today: {amount(last.stock)} {item.unit}
+          Today: {amount(last.stock)} {unitOf(last.stock, item.unit)}
         </span>
       </p>
       <p className="text-base text-ink-soft">Dashed line = time to buy more</p>
@@ -102,8 +104,8 @@ export function BackRoom() {
     };
   }, []);
 
-  // The lowest item comes first from the server, so it is the default pick.
-  const selectedId = picked ?? items?.[0]?.id ?? null;
+  // Nothing is open until you tap an item (tap it again to close).
+  const selectedId = picked;
 
   useEffect(() => {
     if (!selectedId) return;
@@ -127,14 +129,14 @@ export function BackRoom() {
       <h2 id="back-room" className="text-2xl font-bold">
         In the back
       </h2>
-      <p className="mb-4 text-lg text-ink-soft">What we use to make things. Tap one.</p>
+      <p className="mb-4 text-lg text-ink-soft">What we use to make things</p>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {items.map((item) => (
           <button
             key={item.id}
             type="button"
             aria-pressed={item.id === selectedId}
-            onClick={() => setPicked(item.id)}
+            onClick={() => setPicked(item.id === selectedId ? null : item.id)}
             className={`flex flex-col gap-2 rounded-tile p-3 text-left ring-1 ${item.id === selectedId ? "bg-lavender/40 ring-ink/30" : "bg-white ring-ink/10"}`}
           >
             <span className="flex items-center gap-3">
@@ -144,20 +146,22 @@ export function BackRoom() {
               <span className="flex-1 text-lg font-semibold">{item.name}</span>
               <span className="text-right leading-none">
                 <span className="block text-2xl font-bold tabular-nums">{amount(item.stock)}</span>
-                <span className="text-base text-ink-soft">{item.unit}</span>
+                <span className="text-base text-ink-soft">{unitOf(item.stock, item.unit)}</span>
               </span>
             </span>
             <StockLevel stock={item.stock} reorderLevel={item.reorderLevel} />
           </button>
         ))}
       </div>
-      <div className="mt-4">
-        {selected && points && points.length > 0 ? (
-          <History item={selected} points={points} />
-        ) : (
-          <p className="text-lg text-ink-soft">Loading…</p>
-        )}
-      </div>
+      {selected && (
+        <div className="mt-4">
+          {points && points.length > 0 ? (
+            <History item={selected} points={points} />
+          ) : (
+            <p className="text-lg text-ink-soft">Loading…</p>
+          )}
+        </div>
+      )}
     </section>
   );
 }

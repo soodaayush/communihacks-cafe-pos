@@ -24,8 +24,8 @@ export interface InventoryItem {
   name: string;
   imagePublicId: string;
   category: InventoryCategory;
-  unit: string; // "kg", "L", "pcs" ...
-  stock: number; // in `unit`
+  unit: string; // counting words: "bags", "cartons", "units"
+  stock: number; // whole count, in `unit`
   reorderLevel: number;
   unitCostCents: number;
 }

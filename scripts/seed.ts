@@ -93,75 +93,76 @@ const MENU = [
   },
 ];
 
-// Back-room stock. `daily` = typical use per day, `finalStock` = what is left today.
+// Back-room stock, counted in whole bags / cartons / units. `daily` = typical use per day (can be
+// under 1), `finalStock` = what is left today.
 const INVENTORY = [
   {
     name: "Coffee beans",
     category: "ingredient",
-    unit: "kg",
+    unit: "bags",
     unitCost: 1800,
-    daily: 0.8,
-    finalStock: 4.5,
+    daily: 0.7,
+    finalStock: 6,
     reorder: 3,
   },
   {
     name: "Milk",
     category: "ingredient",
-    unit: "L",
+    unit: "cartons",
     unitCost: 150,
-    daily: 6,
-    finalStock: 18,
-    reorder: 12,
+    daily: 4,
+    finalStock: 14,
+    reorder: 8,
   },
   {
     name: "Tea bags",
     category: "ingredient",
-    unit: "box",
+    unit: "cartons",
     unitCost: 400,
-    daily: 0.15,
+    daily: 0.2,
     finalStock: 1,
     reorder: 2,
   },
   {
     name: "Cocoa powder",
     category: "ingredient",
-    unit: "kg",
+    unit: "bags",
     unitCost: 900,
-    daily: 0.12,
-    finalStock: 2.2,
+    daily: 0.15,
+    finalStock: 3,
     reorder: 1,
   },
   {
     name: "Flour",
     category: "ingredient",
-    unit: "kg",
+    unit: "bags",
     unitCost: 120,
-    daily: 1.2,
-    finalStock: 9,
-    reorder: 5,
+    daily: 0.8,
+    finalStock: 8,
+    reorder: 4,
   },
   {
     name: "Sugar",
     category: "ingredient",
-    unit: "kg",
+    unit: "bags",
     unitCost: 110,
-    daily: 0.5,
+    daily: 0.4,
     finalStock: 6,
     reorder: 3,
   },
   {
     name: "Eggs",
     category: "ingredient",
-    unit: "dozen",
+    unit: "cartons",
     unitCost: 450,
-    daily: 0.7,
+    daily: 1.2,
     finalStock: 2,
-    reorder: 3,
+    reorder: 4,
   },
   {
-    name: "Bread loaves",
+    name: "Bread",
     category: "ingredient",
-    unit: "pcs",
+    unit: "units",
     unitCost: 300,
     daily: 3,
     finalStock: 10,
@@ -170,7 +171,7 @@ const INVENTORY = [
   {
     name: "Paper cups",
     category: "packaging",
-    unit: "pcs",
+    unit: "units",
     unitCost: 8,
     daily: 28,
     finalStock: 150,
@@ -179,7 +180,7 @@ const INVENTORY = [
   {
     name: "Cup lids",
     category: "packaging",
-    unit: "pcs",
+    unit: "units",
     unitCost: 4,
     daily: 28,
     finalStock: 90,
@@ -188,7 +189,7 @@ const INVENTORY = [
   {
     name: "Napkins",
     category: "supply",
-    unit: "pack",
+    unit: "cartons",
     unitCost: 250,
     daily: 0.4,
     finalStock: 5,
@@ -197,7 +198,7 @@ const INVENTORY = [
   {
     name: "Cleaning spray",
     category: "supply",
-    unit: "pcs",
+    unit: "units",
     unitCost: 500,
     daily: 0.05,
     finalStock: 2,
@@ -378,23 +379,27 @@ async function main() {
       let net = 0; // everything after opening
       for (let d = 0; d < DAYS; d++) {
         const weekend = [0, 6].includes(dayStart(d).getUTCDay());
-        const use = Math.round(item.daily * (weekend ? 1.3 : 1) * (0.8 + rand() * 0.4) * 100) / 100;
+        // Whole units only (bags, cartons...): round the daily average up or down at random.
+        const use = Math.floor(item.daily * (weekend ? 1.3 : 1) * (0.8 + rand() * 0.4) + rand());
         const at = new Date(dayStart(d).getTime() + 18 * 3_600_000);
         add(at, -use, "use");
         net -= use;
         if (rand() < 0.04) {
-          const waste = Math.round(item.daily * 0.5 * 100) / 100;
+          const waste = Math.max(1, Math.round(item.daily * 0.5));
           add(new Date(at.getTime() + 600_000), -waste, "waste");
           net -= waste;
         }
         if (d % 7 === 2) {
-          const buy = Math.round(item.daily * 7 * 100) / 100;
+          const buy = Math.max(1, Math.ceil(item.daily * 7));
           add(new Date(dayStart(d).getTime() + 7 * 3_600_000), buy, "purchase");
           net += buy;
         }
       }
-      const opening = Math.round((item.finalStock - net) * 100) / 100;
-      const first = [iso(new Date(dayStart(0).getTime() + 6 * 3_600_000)), opening];
+      const opening = item.finalStock - net;
+      // Opening stock (a zero opening needs no ledger row; a negative one is an adjustment).
+      const openingAt = iso(new Date(dayStart(0).getTime() + 6 * 3_600_000));
+      const opening_ =
+        opening === 0 ? null : { qty: opening, reason: opening > 0 ? "purchase" : "adjustment" };
 
       const { rows } = await client.query<{ id: string }>(
         `INSERT INTO inventory_items (name, category, unit, stock, reorder_level, unit_cost_cents, image_public_id)
@@ -413,9 +418,14 @@ async function main() {
       await client.query(
         `INSERT INTO stock_movements (inventory_item_id, created_at, change_qty, reason)
          SELECT $1, * FROM unnest($2::timestamptz[], $3::numeric[], $4::text[])`,
-        [itemId, [first[0], ...mv.at], [first[1], ...mv.qty], ["purchase", ...mv.reason]],
+        [
+          itemId,
+          [...(opening_ ? [openingAt] : []), ...mv.at],
+          [...(opening_ ? [opening_.qty] : []), ...mv.qty],
+          [...(opening_ ? [opening_.reason] : []), ...mv.reason],
+        ],
       );
-      movementCount += mv.at.length + 1;
+      movementCount += mv.at.length + (opening_ ? 1 : 0);
     }
 
     // Commit first: refresh_continuous_aggregate cannot run inside a transaction.

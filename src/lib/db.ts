@@ -44,9 +44,13 @@ export async function query<T extends QueryResultRow>(text: string, params: unkn
   }
 }
 
-/** True when a Tiger Data connection string is configured. Routes fall back to mock data when it is not. */
+/**
+ * True when the app should read from Tiger Data. While developing without DATABASE_URL, routes fall
+ * back to mock data. In production there is no fallback: a missing DATABASE_URL is an error, so a
+ * live deployment can never quietly show hard-coded numbers.
+ */
 export function hasDb(): boolean {
-  return Boolean(process.env.DATABASE_URL);
+  return Boolean(process.env.DATABASE_URL) || process.env.NODE_ENV === "production";
 }
 
 /**
