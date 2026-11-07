@@ -431,6 +431,18 @@ async function main() {
       await client.query(`CALL refresh_continuous_aggregate('${view}', NULL, ${end})`);
     }
 
+    // Compress chunks older than a week now (the policy would do it within the hour) so the demo's
+    // compression numbers are real straight after seeding.
+    const { rows: oldChunks } = await client.query<{ chunk: string }>(
+      `SELECT format('%I.%I', chunk_schema, chunk_name) AS chunk
+         FROM timescaledb_information.chunks
+        WHERE hypertable_name IN ('sales', 'sale_items', 'stock_movements')
+          AND range_end < now() - interval '7 days' AND NOT is_compressed`,
+    );
+    for (const { chunk } of oldChunks) {
+      await client.query(`CALL convert_to_columnstore('${chunk}', if_not_columnstore => true)`);
+    }
+
     console.log(
       `Seeded ${MENU.length} menu items, ${INVENTORY.length} inventory items, ${sales.id.length} sales ` +
         `(${lines.qty.length} lines), ${purchaseCount} purchases, ${movementCount} stock movements.`,
