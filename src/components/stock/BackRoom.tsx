@@ -13,7 +13,7 @@ import { formatAmount, isMeasured, unitOf } from "@/lib/units";
 //   For drinks:      what drinks are made from (beans, tea leaves, milk, lemonade, oranges). Every
 //                    drink sold takes its recipe out of here, so these show how full they are and
 //                    how much went into drinks this week.
-//   Everything else: counted things (cups, lids, flour, eggs...), same look as the shelf.
+//   Everything else: counted things (cups, lids, eggs, bread...), same look as the shelf.
 
 const getJson = <T,>(url: string): Promise<T> =>
   fetch(url).then((r) => (r.ok ? r.json() : Promise.reject(new Error(url))));
@@ -151,7 +151,15 @@ export function BackRoom() {
           picture={<Icon name={pictureOf(counting)} className="size-14" />}
           unit={isMeasured(counting.unit) ? counting.unit : unitOf(2, counting.unit)}
           current={Math.round(counting.stock)}
-          stepBy={counting.unit === "g" ? 50 : counting.unit === "ml" ? 100 : 1}
+          stepBy={
+            counting.unit === "g"
+              ? 50
+              : counting.unit === "ml"
+                ? 100
+                : counting.unit === "pouches"
+                  ? 10
+                  : 1
+          }
           describe={isMeasured(counting.unit) ? (n) => formatAmount(n, counting.unit) : undefined}
           question={isMeasured(counting.unit) ? "How much is there?" : undefined}
           onSave={(n) => saveCount(counting, n)}

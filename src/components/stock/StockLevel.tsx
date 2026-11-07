@@ -15,7 +15,7 @@ type Level = "out" | "low" | "ok";
 
 // Colour never works alone: each level also has its own icon and words.
 const LOOK: Record<Level, { bar: string; icon: IconName; label: string }> = {
-  out: { bar: "bg-blush", icon: "cross", label: "None left" },
+  out: { bar: "bg-stock-out", icon: "cross", label: "Need to buy" },
   low: { bar: "bg-stock-low", icon: "alert", label: "Running low" },
   ok: { bar: "bg-sage", icon: "check", label: "Plenty" },
 };
@@ -26,13 +26,18 @@ export function StockLevel({ stock, reorderLevel, capacity, low = false, note }:
   const max = Math.max(capacity ?? reorderLevel * 4, stock, 1);
   return (
     <div>
-      <div className="h-4 overflow-hidden rounded-full bg-ink/10" aria-hidden>
+      <div
+        className={`h-4 overflow-hidden rounded-full ${level === "out" ? "bg-stock-out/40" : "bg-ink/10"}`}
+        aria-hidden
+      >
         <div
           className={`h-full rounded-full ${look.bar}`}
           style={{ width: `${(stock / max) * 100}%` }}
         />
       </div>
-      <p className="mt-2 flex items-center gap-2 text-lg font-semibold">
+      <p
+        className={`mt-2 flex items-center gap-2 text-lg font-semibold ${level === "out" ? "text-[#a8433b]" : ""}`}
+      >
         <span
           aria-hidden
           className={`flex size-7 items-center justify-center rounded-full ${look.bar}`}

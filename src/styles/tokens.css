@@ -16,6 +16,7 @@
   --color-money-out: var(--color-blush);
   --color-money-left: var(--color-sky);
   --color-stock-low: var(--color-butter);
+  --color-stock-out: #eca9a3; /* a clearer red than blush: "Need to buy" */
 
   /* Minimum size for anything tappable */
   --spacing-touch: 4.5rem; /* 72px */
