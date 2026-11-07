@@ -80,6 +80,11 @@ export default function RegisterPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ paymentMethod, totalCents, items: order }),
     });
+    if (res.status === 404) {
+      // The menu changed under this page (the database was reset, so the items have new ids).
+      // Reload to get the current menu; the order has to be taken again.
+      window.location.reload();
+    }
     if (!res.ok) throw new Error(`Sale not saved: ${res.status}`);
     // The server lowers the stock too (DB or mock shelf); this just updates the tiles without a reload.
     setMenu((m) => m && m.map((it) => ({ ...it, stock: it.stock - qtyOf(it.id) })));
