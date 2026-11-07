@@ -1,0 +1,32 @@
+// Run: npx tsx src/lib/budget.test.ts
+import assert from "node:assert/strict";
+import { buildMonths } from "./budget";
+
+const months = buildMonths(
+  [
+    { date: "2026-10-30", moneyInCents: 1000 },
+    { date: "2026-10-31", moneyInCents: 500 },
+    { date: "2026-11-01", moneyInCents: 2000 },
+  ],
+  [
+    { id: "a", type: "rent", amountCents: 800, date: "2026-10-31" },
+    { id: "b", type: "inventory", amountCents: 300, date: "2026-11-01" },
+    { id: "c", type: "salary", amountCents: 4000, date: "2026-11-01" },
+  ],
+  10_000,
+);
+
+assert.deepEqual(
+  months.map((m) => [m.month, m.openingCents, m.inCents, m.outCents, m.closingCents]),
+  [
+    ["2026-10", 10_000, 1500, 800, 10_700],
+    ["2026-11", 10_700, 2000, 4300, 8400], // November starts with October's closing balance
+  ],
+);
+assert.equal(months[1].spentCents.salary, 4000);
+assert.equal(months[1].spentCents.rent, 0);
+// Each month's plan is the month before's real spending; the first month has none.
+assert.equal(months[0].planCents, null);
+assert.deepEqual(months[1].planCents, { rent: 800, salary: 0, inventory: 0, other: 0 });
+assert.deepEqual(buildMonths([], [], 500), []);
+console.log("budget ok");

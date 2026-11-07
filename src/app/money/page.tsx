@@ -2,15 +2,18 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { InsightList } from "@/components/insights/InsightList";
 import { BoughtList } from "@/components/money/BoughtList";
+import { Budget } from "@/components/money/Budget";
 import { MoneyInHand } from "@/components/money/MoneyInHand";
 import { PaidVsBought } from "@/components/money/PaidVsBought";
 import { RANGE_LABEL, RangeTabs, type MoneyRange } from "@/components/money/RangeTabs";
 import { StaffBills } from "@/components/money/StaffBills";
+import { getBudgetMonths } from "@/lib/budget";
 import { getBought, getExpenses, getFlowByDay } from "@/lib/money-data";
 
 const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
 
 // Customers paid − we bought = in hand. Then each day side by side, and what we bought.
+// Below: this month's budget, starting from what last month left over.
 // Loaded on the server (no loading flash); the tip streams in.
 export default async function MoneyPage({
   searchParams,
@@ -21,10 +24,11 @@ export default async function MoneyPage({
   const range: MoneyRange = raw === "week" ? "week" : "day";
   const days = range === "day" ? 1 : 7;
   await connection();
-  const [week, bought, expenses] = await Promise.all([
+  const [week, bought, expenses, budget] = await Promise.all([
     getFlowByDay(7),
     getBought(days),
     getExpenses(days),
+    getBudgetMonths(),
   ]);
   const period = week.slice(0, days); // newest first: today is the first row
 
@@ -49,6 +53,7 @@ export default async function MoneyPage({
           </section>
           <StaffBills label={RANGE_LABEL[range]} expenses={expenses} />
         </div>
+        <Budget months={budget} />
       </div>
     </div>
   );
