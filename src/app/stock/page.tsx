@@ -189,7 +189,7 @@ export default function StockPage() {
         />
       )}
       {view === "back" && (
-        <div className="w-full max-w-4xl">
+        <div className="lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pr-1">
           <BackRoom />
         </div>
       )}
