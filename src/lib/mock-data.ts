@@ -178,7 +178,18 @@ export function mockSummary(range: SummaryRange, offsetDays = 0): DaySummary[] {
   });
 }
 
-const BASE_DAILY_QTY: Record<string, number> = { m1: 24, m2: 6, m3: 10, m4: 9 };
+// Typical sales per day. Items not listed sell DEFAULT_DAILY_QTY a day.
+const BASE_DAILY_QTY: Record<string, number> = {
+  m1: 24,
+  m2: 6,
+  m3: 10,
+  m4: 9,
+  m5: 7,
+  m6: 5,
+  m7: 6,
+  m8: 4,
+};
+const DEFAULT_DAILY_QTY = 5;
 
 /** Qty sold per item per day, newest first. */
 export function mockItemSales(range: SummaryRange, offsetDays = 0): TrendPoint[] {
@@ -186,7 +197,10 @@ export function mockItemSales(range: SummaryRange, offsetDays = 0): TrendPoint[]
     mockMenu.map((item, idx) => ({
       date: dayString(daysAgo),
       menuItemId: item.id,
-      qtySold: Math.max(0, BASE_DAILY_QTY[item.id] + ((daysAgo * 7 + idx * 3) % 5) - 2),
+      qtySold: Math.max(
+        0,
+        (BASE_DAILY_QTY[item.id] ?? DEFAULT_DAILY_QTY) + ((daysAgo * 7 + idx * 3) % 5) - 2,
+      ),
     })),
   );
 }
