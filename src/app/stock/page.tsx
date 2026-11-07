@@ -125,53 +125,60 @@ export default function StockPage() {
       )}
 
       {view === "shelf" && (
-        <div className="lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pr-1">
+        <div className="flex flex-col gap-3 lg:min-h-0 lg:flex-1">
+          {/* Drinks are made to order, so the shelf only has food you can count. */}
+          <p className="flex items-center gap-2 text-lg text-ink-soft">
+            <Icon name="crate" className="size-6" />
+            Drinks are made fresh. Their ingredients are in &ldquo;In the back&rdquo;.
+          </p>
           {/* On big screens the tiles share the whole height (never shorter than 14.5rem). */}
           <section
             aria-label="Shelf"
-            className="grid gap-4 sm:grid-cols-2 lg:h-full lg:auto-rows-[minmax(14.5rem,1fr)] lg:grid-cols-4"
+            className="grid gap-4 sm:grid-cols-2 lg:min-h-0 lg:flex-1 lg:auto-rows-[minmax(14.5rem,1fr)] lg:overflow-y-auto lg:pr-1"
           >
-            {menu.map((item) => (
-              <div
-                key={item.id}
-                className="flex flex-col justify-between gap-3 rounded-tile bg-white p-4 ring-1 ring-ink/10 lg:p-5 2xl:p-6"
-              >
-                <div className="flex items-center gap-3">
-                  <Image
-                    src={imageUrl(item.imagePublicId, 96)}
-                    alt=""
-                    width={56}
-                    height={56}
-                    unoptimized
-                    className="size-14 lg:size-16 2xl:size-20"
-                  />
-                  <p className="min-w-0 flex-1 text-xl font-semibold lg:text-xl 2xl:text-2xl">
-                    {item.name}
-                  </p>
-                  <p className="text-right">
-                    <span className="block text-number leading-none font-bold tabular-nums lg:text-4xl 2xl:text-[3.25rem]">
-                      {item.stock}
-                    </span>
-                    <span className="text-base text-ink-soft lg:text-lg">left</span>
-                  </p>
-                </div>
-                <StockLevel
-                  stock={item.stock}
-                  reorderLevel={item.reorderLevel}
-                  low={runningLow.has(item.id)}
-                  capacity={Math.ceil(perDay(item.id) * 7)}
-                />
-                <button
-                  type="button"
-                  aria-label={`Count ${item.name}`}
-                  onClick={() => setCounting(item)}
-                  className="flex min-h-12 items-center justify-center gap-2 rounded-tile bg-cream text-lg font-semibold ring-1 ring-ink/15 lg:text-xl 2xl:min-h-16"
+            {menu
+              .filter((item) => item.category !== "drink")
+              .map((item) => (
+                <div
+                  key={item.id}
+                  className="flex flex-col justify-between gap-3 rounded-tile bg-white p-4 ring-1 ring-ink/10 lg:p-5 2xl:p-6"
                 >
-                  <Icon name="pencil" className="size-6" />
-                  Count
-                </button>
-              </div>
-            ))}
+                  <div className="flex items-center gap-3">
+                    <Image
+                      src={imageUrl(item.imagePublicId, 96)}
+                      alt=""
+                      width={56}
+                      height={56}
+                      unoptimized
+                      className="size-14 lg:size-16 2xl:size-20"
+                    />
+                    <p className="min-w-0 flex-1 text-xl font-semibold lg:text-xl 2xl:text-2xl">
+                      {item.name}
+                    </p>
+                    <p className="text-right">
+                      <span className="block text-number leading-none font-bold tabular-nums lg:text-4xl 2xl:text-[3.25rem]">
+                        {item.stock}
+                      </span>
+                      <span className="text-base text-ink-soft lg:text-lg">left</span>
+                    </p>
+                  </div>
+                  <StockLevel
+                    stock={item.stock}
+                    reorderLevel={item.reorderLevel}
+                    low={runningLow.has(item.id)}
+                    capacity={Math.ceil(perDay(item.id) * 7)}
+                  />
+                  <button
+                    type="button"
+                    aria-label={`Count ${item.name}`}
+                    onClick={() => setCounting(item)}
+                    className="flex min-h-12 items-center justify-center gap-2 rounded-tile bg-cream text-lg font-semibold ring-1 ring-ink/15 lg:text-xl 2xl:min-h-16"
+                  >
+                    <Icon name="pencil" className="size-6" />
+                    Count
+                  </button>
+                </div>
+              ))}
           </section>
         </div>
       )}

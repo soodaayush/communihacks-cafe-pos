@@ -227,6 +227,30 @@ const ICONS = {
       <path d="M40 9v.1M41 15v.1M36 4v.1" strokeWidth={4} />
     </>
   ),
+  teaLeaves: (
+    <>
+      <rect x="10" y="14" width="28" height="27" rx="3" fill={SAGE} />
+      <rect x="8" y="8" width="32" height="7" rx="2.5" fill={WHITE} />
+      <path d="M24 35c-6-3-7-10-1-15 6 4 6 11 1 15z" fill={WHITE} />
+      <path d="M24 35v-9" />
+    </>
+  ),
+  lemonade: (
+    <>
+      <path d="M19 5h10v7l4 6v21a4 4 0 0 1-4 4H19a4 4 0 0 1-4-4V18l4-6z" fill={WHITE} />
+      <path d="M15.5 24h17v15a4 4 0 0 1-4 4h-9a4 4 0 0 1-4-4z" fill={BUTTER} />
+      <circle cx="24" cy="31" r="5" fill={WHITE} />
+      <path d="M24 26v10M19 31h10" strokeWidth={2} />
+    </>
+  ),
+  oranges: (
+    <>
+      <circle cx="24" cy="27" r="15" fill="#f6c58f" />
+      <path d="M24 12c0-3 1-5 3-6" />
+      <path d="M26 11c3-4 9-4 11-1-3 3-8 3-11 1z" fill={SAGE} />
+      <path d="M17 24v.1M22 31v.1M30 25v.1M28 33v.1" strokeWidth={3.5} />
+    </>
+  ),
 } satisfies Record<string, ReactNode>;
 
 export type IconName = keyof typeof ICONS;
