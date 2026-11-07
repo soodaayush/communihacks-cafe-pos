@@ -223,10 +223,17 @@ async function main() {
   const dayStart = (i: number) => new Date(today.getTime() - (DAYS - 1 - i) * 86_400_000);
 
   try {
-    await client.query("BEGIN");
+    // Wipe first, in its own transaction. TRUNCATE does not clear the continuous aggregates, so refresh
+    // them while the source tables are empty: that deletes any stale rollups (and resets their watermark,
+    // otherwise a leftover "today" bucket would hide new sales from the real-time aggregates).
     await client.query(
       "TRUNCATE sale_items, sales, stock_movements, purchases, expenses, inventory_items, menu_items RESTART IDENTITY CASCADE",
     );
+    for (const view of ["sales_daily", "sales_hourly", "item_daily"]) {
+      await client.query(`CALL refresh_continuous_aggregate('${view}', NULL, NULL)`);
+    }
+
+    await client.query("BEGIN");
 
     // --- Menu items ---------------------------------------------------------
     const menuIds: string[] = [];
@@ -411,9 +418,30 @@ async function main() {
       movementCount += mv.at.length + 1;
     }
 
-    // Make the daily aggregate include the data we just inserted.
+    // Commit first: refresh_continuous_aggregate cannot run inside a transaction.
     await client.query("COMMIT");
-    await client.query(`CALL refresh_continuous_aggregate('sales_daily', NULL, NULL)`);
+    // Materialize only COMPLETED buckets. The current day/hour stays un-materialized, which is what
+    // lets the real-time aggregates add today's new sales on top automatically.
+    const bucketEnd = {
+      sales_daily: "date_trunc('day', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'",
+      item_daily: "date_trunc('day', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'",
+      sales_hourly: "date_trunc('hour', now())",
+    };
+    for (const [view, end] of Object.entries(bucketEnd)) {
+      await client.query(`CALL refresh_continuous_aggregate('${view}', NULL, ${end})`);
+    }
+
+    // Compress chunks older than a week now (the policy would do it within the hour) so the demo's
+    // compression numbers are real straight after seeding.
+    const { rows: oldChunks } = await client.query<{ chunk: string }>(
+      `SELECT format('%I.%I', chunk_schema, chunk_name) AS chunk
+         FROM timescaledb_information.chunks
+        WHERE hypertable_name IN ('sales', 'sale_items', 'stock_movements')
+          AND range_end < now() - interval '7 days' AND NOT is_compressed`,
+    );
+    for (const { chunk } of oldChunks) {
+      await client.query(`CALL convert_to_columnstore('${chunk}', if_not_columnstore => true)`);
+    }
 
     console.log(
       `Seeded ${MENU.length} menu items, ${INVENTORY.length} inventory items, ${sales.id.length} sales ` +

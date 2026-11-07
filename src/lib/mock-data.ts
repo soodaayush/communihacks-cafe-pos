@@ -1,6 +1,7 @@
 // Hard-coded fake data so the front end can work before the database is wired.
 // TODO(dev1): replace each usage in src/app/api with a real query via src/lib/db.ts.
 import type {
+  BusyHour,
   DaySummary,
   InventoryItem,
   Expense,
@@ -8,6 +9,7 @@ import type {
   Purchase,
   RestockSuggestion,
   Sale,
+  StockPoint,
   SummaryRange,
   TrendPoint,
 } from "./types";
@@ -152,8 +154,19 @@ export const mockTrends: TrendPoint[] = [
 ];
 
 export const mockRestock: RestockSuggestion[] = [
-  { menuItemId: "m2", stock: 8, reorderLevel: 10, suggestedQty: 20 },
-  { menuItemId: "m4", stock: 3, reorderLevel: 8, suggestedQty: 24 },
+  { menuItemId: "m2", stock: 8, reorderLevel: 10, suggestedQty: 20, daysLeft: 2 },
+  { menuItemId: "m4", stock: 3, reorderLevel: 8, suggestedQty: 24, daysLeft: 1 },
+];
+
+export const mockBusyHours: BusyHour[] = [
+  { hour: 9, saleCount: 40, moneyInCents: 16000 },
+  { hour: 12, saleCount: 65, moneyInCents: 28000 },
+  { hour: 15, saleCount: 30, moneyInCents: 12000 },
+];
+
+export const mockStockHistory: StockPoint[] = [
+  { date: "2026-11-06", stock: 5.2 },
+  { date: "2026-11-07", stock: 4.5 },
 ];
 
 export const RANGE_DAYS: Record<SummaryRange, number> = { day: 1, week: 7, month: 30 };
@@ -178,7 +191,18 @@ export function mockSummary(range: SummaryRange, offsetDays = 0): DaySummary[] {
   });
 }
 
-const BASE_DAILY_QTY: Record<string, number> = { m1: 24, m2: 6, m3: 10, m4: 9 };
+// Typical sales per day. Items not listed sell DEFAULT_DAILY_QTY a day.
+const BASE_DAILY_QTY: Record<string, number> = {
+  m1: 24,
+  m2: 6,
+  m3: 10,
+  m4: 9,
+  m5: 7,
+  m6: 5,
+  m7: 6,
+  m8: 4,
+};
+const DEFAULT_DAILY_QTY = 5;
 
 /** Qty sold per item per day, newest first. */
 export function mockItemSales(range: SummaryRange, offsetDays = 0): TrendPoint[] {
@@ -186,7 +210,10 @@ export function mockItemSales(range: SummaryRange, offsetDays = 0): TrendPoint[]
     mockMenu.map((item, idx) => ({
       date: dayString(daysAgo),
       menuItemId: item.id,
-      qtySold: Math.max(0, BASE_DAILY_QTY[item.id] + ((daysAgo * 7 + idx * 3) % 5) - 2),
+      qtySold: Math.max(
+        0,
+        (BASE_DAILY_QTY[item.id] ?? DEFAULT_DAILY_QTY) + ((daysAgo * 7 + idx * 3) % 5) - 2,
+      ),
     })),
   );
 }

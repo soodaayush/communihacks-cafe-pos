@@ -3,8 +3,8 @@
 --
 -- Layout
 --   Regular tables : menu_items, inventory_items, purchases, expenses
---   Hypertables    : sales, stock_movements   (time-series, append-mostly history)
---   Aggregate      : sales_daily              (continuous aggregate over sales)
+--   Hypertables    : sales, sale_items, stock_movements   (time-series, append-mostly history)
+--   Aggregates     : sales_daily, sales_hourly, item_daily (continuous aggregates)
 
 CREATE EXTENSION IF NOT EXISTS timescaledb;
 
@@ -46,6 +46,8 @@ CREATE TABLE IF NOT EXISTS sales (
   tsdb.orderby = 'created_at DESC'
 );
 
+-- Hypertable too (time column = sale_created_at): the biggest table, so it gets columnstore
+-- compression segmented by menu item, and it can feed continuous aggregates (item_daily below).
 -- No FK to sales on purpose: (sale_id, sale_created_at) points at the hypertable row.
 CREATE TABLE IF NOT EXISTS sale_items (
   sale_id          uuid        NOT NULL,
@@ -54,7 +56,15 @@ CREATE TABLE IF NOT EXISTS sale_items (
   qty              integer     NOT NULL CHECK (qty > 0),
   unit_price_cents integer     NOT NULL CHECK (unit_price_cents >= 0),
   unit_cost_cents  integer     NOT NULL CHECK (unit_cost_cents >= 0)
+) WITH (
+  tsdb.hypertable,
+  tsdb.partition_column = 'sale_created_at',
+  tsdb.segmentby = 'menu_item_id',
+  tsdb.orderby = 'sale_created_at DESC'
 );
+-- Chunks older than a week move to compressed columnstore automatically (sale_items needs it spelled
+-- out when the table was converted in place; if_not_exists makes this a no-op otherwise).
+CALL add_columnstore_policy('sale_items', after => INTERVAL '7 days', if_not_exists => TRUE);
 CREATE INDEX IF NOT EXISTS sale_items_sale_idx ON sale_items (sale_id, sale_created_at);
 CREATE INDEX IF NOT EXISTS sale_items_item_time_idx ON sale_items (menu_item_id, sale_created_at DESC);
 
@@ -92,15 +102,56 @@ CREATE TABLE IF NOT EXISTS expenses (
   date         date    NOT NULL
 );
 
--- Money in per day, kept up to date by TimescaleDB. Cheap to read for the day/week/month views.
--- Money out (expenses + purchases) is added in the API query; profit needs sale_items,
--- which cannot be joined inside a continuous aggregate.
+-- Continuous aggregates: TimescaleDB keeps these rollups up to date for us.
+-- All are real-time (materialized_only = false): a query also includes the newest rows that
+-- are not materialized yet, so a sale rung up one second ago shows up. The policy refreshes
+-- the stored part every few minutes. Buckets are UTC days/hours.
+
+-- Money in per day. Money out and profit come from expenses + item_daily in the summary query.
 CREATE MATERIALIZED VIEW IF NOT EXISTS sales_daily
 WITH (timescaledb.continuous) AS
 SELECT
   time_bucket(INTERVAL '1 day', created_at) AS day,
-  count(*)                                  AS sale_count,
-  sum(total_cents)                          AS money_in_cents
+  count(*)::int                             AS sale_count,
+  sum(total_cents)::bigint                  AS money_in_cents
 FROM sales
 GROUP BY 1
 WITH NO DATA;
+
+-- Sales per hour: powers the "busiest hours" chart.
+CREATE MATERIALIZED VIEW IF NOT EXISTS sales_hourly
+WITH (timescaledb.continuous) AS
+SELECT
+  time_bucket(INTERVAL '1 hour', created_at) AS hour,
+  count(*)::int                              AS sale_count,
+  sum(total_cents)::bigint                   AS money_in_cents
+FROM sales
+GROUP BY 1
+WITH NO DATA;
+
+-- Units, revenue and cost of goods per menu item per day: powers trends, profit and restock forecasts.
+CREATE MATERIALIZED VIEW IF NOT EXISTS item_daily
+WITH (timescaledb.continuous) AS
+SELECT
+  time_bucket(INTERVAL '1 day', sale_created_at) AS day,
+  menu_item_id,
+  sum(qty)::int                                  AS qty_sold,
+  sum(qty * unit_price_cents)::bigint            AS revenue_cents,
+  sum(qty * unit_cost_cents)::bigint             AS cogs_cents
+FROM sale_items
+GROUP BY 1, 2
+WITH NO DATA;
+
+ALTER MATERIALIZED VIEW sales_daily  SET (timescaledb.materialized_only = false);
+ALTER MATERIALIZED VIEW sales_hourly SET (timescaledb.materialized_only = false);
+ALTER MATERIALIZED VIEW item_daily   SET (timescaledb.materialized_only = false);
+
+SELECT add_continuous_aggregate_policy('sales_daily',
+  start_offset => NULL, end_offset => INTERVAL '1 hour',
+  schedule_interval => INTERVAL '5 minutes', if_not_exists => TRUE);
+SELECT add_continuous_aggregate_policy('sales_hourly',
+  start_offset => NULL, end_offset => INTERVAL '1 hour',
+  schedule_interval => INTERVAL '5 minutes', if_not_exists => TRUE);
+SELECT add_continuous_aggregate_policy('item_daily',
+  start_offset => NULL, end_offset => INTERVAL '1 hour',
+  schedule_interval => INTERVAL '5 minutes', if_not_exists => TRUE);
