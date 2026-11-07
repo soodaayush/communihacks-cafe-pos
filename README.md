@@ -36,6 +36,7 @@ Back-room stock (ingredients, packaging, supplies) is at `/api/supplies`; stock 
 | `src/lib/metrics.ts`                   | Insight numbers, computed in code (never by the AI)     |
 | `src/lib/insights.ts`                  | Picks top 3 insights; Gemini wording + local fallback   |
 | `src/lib/integrations/gemini.ts`       | Gemini call (structured JSON)                           |
+| `src/lib/whatif.ts`                    | What-if price maths (`npx tsx src/lib/whatif.test.ts`)  |
 | `src/styles/tokens.css`                | Colours, touch size, font sizes (Tailwind `@theme`)     |
 | `src/app/manifest.ts`, `public/icons/` | PWA manifest + icons                                    |
 | `db/schema.sql`                        | Database schema (`npm run db:schema`, needs `psql`)     |
