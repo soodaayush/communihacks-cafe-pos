@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import type { BuyResult } from "@/app/api/supplies/buy/route";
 import { Icon } from "@/components/icons/Icon";
 import { pictureOf } from "@/components/icons/supplyPicture";
 import type { InventoryItem } from "@/lib/types";
@@ -10,7 +11,14 @@ import { money, unitOf } from "./BoughtList";
 const MAX = 99;
 
 /** "We bought…": tap the picture, then how many. The cost fills in by itself. */
-export function BuySheet({ onClose }: { onClose: () => void }) {
+export function BuySheet({
+  onClose,
+  onSaved,
+}: {
+  onClose: () => void;
+  /** Called with what the server says after a purchase, e.g. the new stock count. */
+  onSaved?: (result: BuyResult) => void;
+}) {
   const ref = useRef<HTMLDialogElement>(null);
   const router = useRouter();
   const [items, setItems] = useState<InventoryItem[] | null>(null);
@@ -42,6 +50,7 @@ export function BuySheet({ onClose }: { onClose: () => void }) {
         body: JSON.stringify({ inventoryItemId: picked.id, qty }),
       });
       if (!r.ok) throw new Error();
+      onSaved?.((await r.json()) as BuyResult);
       router.refresh();
       ref.current?.close();
     } catch {

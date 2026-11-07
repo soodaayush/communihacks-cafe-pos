@@ -6,6 +6,8 @@ export interface BuyResult {
   qty: number;
   unit: string;
   costCents: number;
+  /** How many there are now, after this purchase. */
+  stock: number;
 }
 
 // Body: { inventoryItemId, qty (whole number 1-99) }
@@ -13,7 +15,7 @@ export interface BuyResult {
 // stock_movements ledger, and the money spent (qty × unit cost) is recorded as an expense.
 export function POST(request: Request) {
   return dbOrMock<BuyResult>(
-    () => ({ name: "Coffee beans", qty: 1, unit: "bags", costCents: 1800 }),
+    () => ({ name: "Coffee beans", qty: 1, unit: "bags", costCents: 1800, stock: 7 }),
     async () => {
       const body = await readJson(request);
       const { inventoryItemId, qty } = body;
@@ -27,10 +29,11 @@ export function POST(request: Request) {
           name: string;
           unit: string;
           unit_cost_cents: number;
+          stock: number;
         }>(
           `UPDATE inventory_items SET stock = stock + $2
             WHERE id = $1
-        RETURNING name, unit, unit_cost_cents`,
+        RETURNING name, unit, unit_cost_cents, stock::float8 AS stock`,
           [inventoryItemId, count],
         );
         const item = rows[0];
@@ -45,7 +48,13 @@ export function POST(request: Request) {
            VALUES ('inventory', $1, (now() AT TIME ZONE 'UTC')::date)`,
           [costCents],
         );
-        return { name: item.name, qty: count, unit: item.unit, costCents };
+        return {
+          name: item.name,
+          qty: count,
+          unit: item.unit,
+          costCents,
+          stock: Math.round(item.stock),
+        };
       });
     },
     201,

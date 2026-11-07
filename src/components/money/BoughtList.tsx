@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import type { BuyResult } from "@/app/api/supplies/buy/route";
 import { Icon } from "@/components/icons/Icon";
 import { pictureFor } from "@/components/icons/supplyPicture";
 import { formatCents, formatDollars } from "@/lib/money";
@@ -18,6 +19,14 @@ export const unitOf = (n: number, unit: string) =>
 /** What the café bought in the period, with a big button to add something new. */
 export function BoughtList({ label, lines }: { label: string; lines: BoughtLine[] }) {
   const [buying, setBuying] = useState(false);
+  const [saved, setSaved] = useState<BuyResult | null>(null);
+
+  // The confirmation goes away by itself.
+  useEffect(() => {
+    if (!saved) return;
+    const t = setTimeout(() => setSaved(null), 6000);
+    return () => clearTimeout(t);
+  }, [saved]);
 
   return (
     <section className="flex flex-col gap-3 rounded-tile bg-white p-5 ring-1 ring-ink/10">
@@ -51,7 +60,19 @@ export function BoughtList({ label, lines }: { label: string; lines: BoughtLine[
         <Icon name="cart" className="size-8" />
         We bought something
       </button>
-      {buying && <BuySheet onClose={() => setBuying(false)} />}
+      {buying && <BuySheet onClose={() => setBuying(false)} onSaved={setSaved} />}
+      {/* Floats above the page, so nothing on screen moves. Says the stock went up. */}
+      {saved && (
+        <p
+          role="status"
+          className="fixed inset-x-4 bottom-28 z-50 mx-auto flex max-w-md items-center gap-3 rounded-tile bg-sage px-5 py-4 text-xl font-bold shadow-lg"
+        >
+          <Icon name="check" className="size-8" />
+          <span>
+            {saved.name}: now {saved.stock} {unitOf(saved.stock, saved.unit)} in stock
+          </span>
+        </p>
+      )}
     </section>
   );
 }
