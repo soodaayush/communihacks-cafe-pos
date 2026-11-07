@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { Icon, type IconName } from "@/components/icons/Icon";
 import { BackRoom } from "@/components/stock/BackRoom";
 import { CountSheet } from "@/components/stock/CountSheet";
 import { StockLevel } from "@/components/stock/StockLevel";
@@ -17,10 +18,10 @@ const getJson = <T,>(url: string): Promise<T> =>
 type View = "shelf" | "back" | "trends";
 
 // One idea per view, so the screen never gets crowded.
-const VIEWS: { id: View; icon: string; label: string }[] = [
-  { id: "shelf", icon: "🧁", label: "Shelf" },
-  { id: "back", icon: "📦", label: "In the back" },
-  { id: "trends", icon: "📈", label: "Trends" },
+const VIEWS: { id: View; icon: IconName; label: string }[] = [
+  { id: "shelf", icon: "shelf", label: "Shelf" },
+  { id: "back", icon: "crate", label: "In the back" },
+  { id: "trends", icon: "chart", label: "Trends" },
 ];
 
 export default function StockPage() {
@@ -55,7 +56,7 @@ export default function StockPage() {
     });
     if (!res.ok) throw new Error("save failed");
     setCounting(null);
-    setNotice(`✓ Saved: ${item.name} ${count} left`);
+    setNotice(`Saved: ${item.name} ${count} left`);
     setTimeout(() => setNotice(null), 4000);
     load();
   }
@@ -107,23 +108,25 @@ export default function StockPage() {
             onClick={() => setView(v.id)}
             className={`flex min-h-touch items-center justify-center gap-3 rounded-tile text-xl font-semibold ring-1 ${view === v.id ? "bg-white ring-ink/15" : "bg-white/40 text-ink-soft ring-transparent"}`}
           >
-            <span aria-hidden className="text-3xl">
-              {v.icon}
-            </span>
+            <Icon name={v.icon} className="size-9" />
             <span>{v.label}</span>
           </button>
         ))}
       </div>
 
       {notice && (
-        <p role="status" className="rounded-tile bg-sage/60 p-3 text-center text-xl font-semibold">
+        <p
+          role="status"
+          className="flex items-center justify-center gap-2 rounded-tile bg-sage/60 p-3 text-xl font-semibold"
+        >
+          <Icon name="check" className="size-6" />
           {notice}
         </p>
       )}
 
       {view === "shelf" && (
         <div className="lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pr-1">
-          {/* On big screens the tiles share the whole height (never shorter than 13rem). */}
+          {/* On big screens the tiles share the whole height (never shorter than 14.5rem). */}
           <section
             aria-label="Shelf"
             className="grid gap-4 sm:grid-cols-2 lg:h-full lg:auto-rows-[minmax(14.5rem,1fr)] lg:grid-cols-4"
@@ -162,9 +165,10 @@ export default function StockPage() {
                   type="button"
                   aria-label={`Count ${item.name}`}
                   onClick={() => setCounting(item)}
-                  className="min-h-12 rounded-tile bg-cream text-lg font-semibold ring-1 ring-ink/15 lg:min-h-12 lg:text-xl 2xl:min-h-16"
+                  className="flex min-h-12 items-center justify-center gap-2 rounded-tile bg-cream text-lg font-semibold ring-1 ring-ink/15 lg:text-xl 2xl:min-h-16"
                 >
-                  ✏️ Count
+                  <Icon name="pencil" className="size-6" />
+                  Count
                 </button>
               </div>
             ))}

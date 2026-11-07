@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Icon } from "@/components/icons/Icon";
 
 export interface CountSheetProps {
   name: string;
@@ -130,9 +131,16 @@ export function CountSheet({ name, picture, unit, current, onSave, onClose }: Co
             type="button"
             disabled={!valid || saving || count === current}
             onClick={save}
-            className="min-h-touch rounded-tile bg-sage text-xl font-bold disabled:opacity-50"
+            className="flex min-h-touch items-center justify-center gap-2 rounded-tile bg-sage text-xl font-bold disabled:opacity-50"
           >
-            {saving ? "Saving…" : "✓ Save"}
+            {saving ? (
+              "Saving…"
+            ) : (
+              <>
+                <Icon name="check" className="size-6" />
+                Save
+              </>
+            )}
           </button>
         </div>
       </div>

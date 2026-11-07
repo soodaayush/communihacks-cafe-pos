@@ -98,12 +98,6 @@ export interface BusyHour {
   moneyInCents: number;
 }
 
-// End-of-day level of one back-room item.
-export interface StockPoint {
-  date: string; // YYYY-MM-DD
-  stock: number;
-}
-
 export interface ExplainRequest {
   topic: "money" | "trends";
   numbers: Record<string, number>;

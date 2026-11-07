@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Icon, type IconName } from "@/components/icons/Icon";
 
-const LINKS = [
-  { href: "/register", icon: "🛒", label: "Register" },
-  { href: "/stock", icon: "📦", label: "Stock" },
-  { href: "/money", icon: "💰", label: "Money" },
-] as const;
+const LINKS: { href: string; icon: IconName; label: string }[] = [
+  { href: "/register", icon: "cart", label: "Register" },
+  { href: "/stock", icon: "boxes", label: "Stock" },
+  { href: "/money", icon: "coin", label: "Money" },
+];
 
-// TODO(dev2): swap emoji for picture icons.
 export function NavBar() {
   const path = usePathname();
   return (
@@ -23,9 +23,7 @@ export function NavBar() {
             aria-current={active ? "page" : undefined}
             className={`flex min-h-touch items-center justify-center gap-3 rounded-tile text-xl font-semibold ${active ? "bg-white ring-1 ring-ink/15" : "text-ink-soft"}`}
           >
-            <span aria-hidden className="text-3xl">
-              {icon}
-            </span>
+            <Icon name={icon} className="size-10" />
             <span className="hidden sm:inline">{label}</span>
           </Link>
         );

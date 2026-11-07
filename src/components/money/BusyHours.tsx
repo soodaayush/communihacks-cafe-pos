@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { Icon } from "@/components/icons/Icon";
 import type { BusyHour } from "@/lib/types";
 
 /** The database groups by UTC hour; show the hour on this tablet's clock instead. */
@@ -44,8 +45,8 @@ export function BusyHours({ hours }: { hours: BusyHour[] }) {
               key={h.hour}
               className="flex h-full flex-1 flex-col items-center justify-end gap-1"
             >
-              <span className="h-6 text-xl leading-none">
-                {h === busiest && h.count > 0 ? "⭐" : ""}
+              <span className="flex h-6 items-end">
+                {h === busiest && h.count > 0 && <Icon name="star" className="size-6" />}
               </span>
               <span
                 className={`w-full rounded-t-lg ${h === busiest ? "bg-sage" : "bg-sky"}`}

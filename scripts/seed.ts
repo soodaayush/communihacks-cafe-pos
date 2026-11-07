@@ -209,6 +209,13 @@ const INVENTORY = [
 const iso = (d: Date) => d.toISOString();
 const dateOnly = (d: Date) => d.toISOString().slice(0, 10);
 
+// The café is in Kitchener-Waterloo (Eastern time). Sales are stored in UTC and the app shows hours on
+// the tablet's own clock, converted with standard time (UTC-5) all year, so the seed does the same:
+// "open 8am to 5pm" is 13:00-22:00 UTC and reads as 8am-5pm on a tablet there.
+const TORONTO_STANDARD_OFFSET_HOURS = -5;
+const torontoTime = (day: Date, minutes: number) =>
+  new Date(day.getTime() + minutes * 60_000 - TORONTO_STANDARD_OFFSET_HOURS * 3_600_000);
+
 async function main() {
   const url = process.env.DATABASE_URL;
   if (!url) {
@@ -287,7 +294,7 @@ async function main() {
       const weekend = [0, 6].includes(dayStart(d).getUTCDay());
       const orders = randInt(weekend ? 45 : 28, weekend ? 70 : 50);
       for (let o = 0; o < orders; o++) {
-        const at = new Date(dayStart(d).getTime() + (8 * 60 + randInt(0, 9 * 60)) * 60_000);
+        const at = torontoTime(dayStart(d), 8 * 60 + randInt(0, 9 * 60));
         if (at.getTime() > now) continue; // nothing in the future
         const id = randomUUID();
         const basket = new Map<number, number>();
