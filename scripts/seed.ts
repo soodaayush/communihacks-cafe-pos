@@ -1,13 +1,430 @@
-// Run: DATABASE_URL=... npm run db:seed
-// TODO(dev1): insert fake menu_items, then ~30 days of sales + sale_items, purchases and expenses.
-//             Reuse values from src/lib/mock-data.ts. All amounts in cents.
+// Fills the database with ~30 days of fake cafe history. All data is fake.
+// Run: npm run db:seed        (DESTRUCTIVE: wipes these tables first, then re-fills them)
+import { randomUUID } from "node:crypto";
+import { Client } from "pg";
+
+const DAYS = 30;
+
+// Deterministic random numbers so every seed run produces the same cafe.
+function rng(seed: number) {
+  return () => {
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+const rand = rng(42);
+const randInt = (min: number, max: number) => min + Math.floor(rand() * (max - min + 1));
+
+// Things customers buy. `popularity` is a weight for how often it lands in an order.
+const MENU = [
+  {
+    name: "Coffee",
+    category: "drink",
+    price: 200,
+    cost: 60,
+    popularity: 10,
+    finalStock: 40,
+    reorder: 10,
+  },
+  {
+    name: "Tea",
+    category: "drink",
+    price: 150,
+    cost: 30,
+    popularity: 5,
+    finalStock: 8,
+    reorder: 10,
+  },
+  {
+    name: "Hot Chocolate",
+    category: "drink",
+    price: 250,
+    cost: 80,
+    popularity: 4,
+    finalStock: 22,
+    reorder: 8,
+  },
+  {
+    name: "Juice",
+    category: "drink",
+    price: 200,
+    cost: 70,
+    popularity: 4,
+    finalStock: 18,
+    reorder: 8,
+  },
+  {
+    name: "Muffin",
+    category: "food",
+    price: 250,
+    cost: 90,
+    popularity: 6,
+    finalStock: 12,
+    reorder: 6,
+  },
+  {
+    name: "Cookie",
+    category: "food",
+    price: 100,
+    cost: 25,
+    popularity: 8,
+    finalStock: 3,
+    reorder: 8,
+  },
+  {
+    name: "Sandwich",
+    category: "food",
+    price: 450,
+    cost: 180,
+    popularity: 3,
+    finalStock: 14,
+    reorder: 5,
+  },
+  {
+    name: "Toast",
+    category: "food",
+    price: 175,
+    cost: 45,
+    popularity: 4,
+    finalStock: 25,
+    reorder: 8,
+  },
+];
+
+// Back-room stock. `daily` = typical use per day, `finalStock` = what is left today.
+const INVENTORY = [
+  {
+    name: "Coffee beans",
+    category: "ingredient",
+    unit: "kg",
+    unitCost: 1800,
+    daily: 0.8,
+    finalStock: 4.5,
+    reorder: 3,
+  },
+  {
+    name: "Milk",
+    category: "ingredient",
+    unit: "L",
+    unitCost: 150,
+    daily: 6,
+    finalStock: 18,
+    reorder: 12,
+  },
+  {
+    name: "Tea bags",
+    category: "ingredient",
+    unit: "box",
+    unitCost: 400,
+    daily: 0.15,
+    finalStock: 1,
+    reorder: 2,
+  },
+  {
+    name: "Cocoa powder",
+    category: "ingredient",
+    unit: "kg",
+    unitCost: 900,
+    daily: 0.12,
+    finalStock: 2.2,
+    reorder: 1,
+  },
+  {
+    name: "Flour",
+    category: "ingredient",
+    unit: "kg",
+    unitCost: 120,
+    daily: 1.2,
+    finalStock: 9,
+    reorder: 5,
+  },
+  {
+    name: "Sugar",
+    category: "ingredient",
+    unit: "kg",
+    unitCost: 110,
+    daily: 0.5,
+    finalStock: 6,
+    reorder: 3,
+  },
+  {
+    name: "Eggs",
+    category: "ingredient",
+    unit: "dozen",
+    unitCost: 450,
+    daily: 0.7,
+    finalStock: 2,
+    reorder: 3,
+  },
+  {
+    name: "Bread loaves",
+    category: "ingredient",
+    unit: "pcs",
+    unitCost: 300,
+    daily: 3,
+    finalStock: 10,
+    reorder: 6,
+  },
+  {
+    name: "Paper cups",
+    category: "packaging",
+    unit: "pcs",
+    unitCost: 8,
+    daily: 28,
+    finalStock: 150,
+    reorder: 100,
+  },
+  {
+    name: "Cup lids",
+    category: "packaging",
+    unit: "pcs",
+    unitCost: 4,
+    daily: 28,
+    finalStock: 90,
+    reorder: 100,
+  },
+  {
+    name: "Napkins",
+    category: "supply",
+    unit: "pack",
+    unitCost: 250,
+    daily: 0.4,
+    finalStock: 5,
+    reorder: 3,
+  },
+  {
+    name: "Cleaning spray",
+    category: "supply",
+    unit: "pcs",
+    unitCost: 500,
+    daily: 0.05,
+    finalStock: 2,
+    reorder: 1,
+  },
+];
+
+const iso = (d: Date) => d.toISOString();
+const dateOnly = (d: Date) => d.toISOString().slice(0, 10);
 
 async function main() {
-  if (!process.env.DATABASE_URL) {
+  const url = process.env.DATABASE_URL;
+  if (!url) {
     console.log("DATABASE_URL not set. Nothing to seed.");
     return;
   }
-  console.log("TODO(dev1): seed script not written yet.");
+  const client = new Client({ connectionString: url });
+  await client.connect();
+
+  // Day 0 = DAYS-1 days ago, last day = today.
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  const dayStart = (i: number) => new Date(today.getTime() - (DAYS - 1 - i) * 86_400_000);
+
+  try {
+    await client.query("BEGIN");
+    await client.query(
+      "TRUNCATE sale_items, sales, stock_movements, purchases, expenses, inventory_items, menu_items RESTART IDENTITY CASCADE",
+    );
+
+    // --- Menu items ---------------------------------------------------------
+    const menuIds: string[] = [];
+    for (const m of MENU) {
+      const { rows } = await client.query<{ id: string }>(
+        `INSERT INTO menu_items (name, image_public_id, category, price_cents, cost_cents, stock, reorder_level)
+         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+        [
+          m.name,
+          `kwhab/menu/${m.name.toLowerCase().replace(/\s+/g, "-")}`,
+          m.category,
+          m.price,
+          m.cost,
+          m.finalStock,
+          m.reorder,
+        ],
+      );
+      menuIds.push(rows[0].id);
+    }
+
+    // --- Sales + sale_items -------------------------------------------------
+    const totalWeight = MENU.reduce((s, m) => s + m.popularity, 0);
+    const pickItem = () => {
+      let r = rand() * totalWeight;
+      for (let i = 0; i < MENU.length; i++) {
+        r -= MENU[i].popularity;
+        if (r <= 0) return i;
+      }
+      return 0;
+    };
+
+    const sales = {
+      id: [] as string[],
+      at: [] as string[],
+      pay: [] as string[],
+      total: [] as number[],
+    };
+    const lines = {
+      saleId: [] as string[],
+      at: [] as string[],
+      item: [] as string[],
+      qty: [] as number[],
+      price: [] as number[],
+      cost: [] as number[],
+    };
+    const soldPerDay: number[][] = Array.from({ length: DAYS }, () => MENU.map(() => 0));
+    const now = Date.now();
+
+    for (let d = 0; d < DAYS; d++) {
+      const weekend = [0, 6].includes(dayStart(d).getUTCDay());
+      const orders = randInt(weekend ? 45 : 28, weekend ? 70 : 50);
+      for (let o = 0; o < orders; o++) {
+        const at = new Date(dayStart(d).getTime() + (8 * 60 + randInt(0, 9 * 60)) * 60_000);
+        if (at.getTime() > now) continue; // nothing in the future
+        const id = randomUUID();
+        const basket = new Map<number, number>();
+        for (let k = randInt(1, 3); k > 0; k--) {
+          const i = pickItem();
+          basket.set(i, (basket.get(i) ?? 0) + 1);
+        }
+        let total = 0;
+        for (const [i, qty] of basket) {
+          total += MENU[i].price * qty;
+          soldPerDay[d][i] += qty;
+          lines.saleId.push(id);
+          lines.at.push(iso(at));
+          lines.item.push(menuIds[i]);
+          lines.qty.push(qty);
+          lines.price.push(MENU[i].price);
+          lines.cost.push(MENU[i].cost);
+        }
+        sales.id.push(id);
+        sales.at.push(iso(at));
+        sales.pay.push(rand() < 0.55 ? "cash" : "debit");
+        sales.total.push(total);
+      }
+    }
+
+    await client.query(
+      `INSERT INTO sales (id, created_at, payment_method, total_cents)
+       SELECT * FROM unnest($1::uuid[], $2::timestamptz[], $3::text[], $4::int[])`,
+      [sales.id, sales.at, sales.pay, sales.total],
+    );
+    await client.query(
+      `INSERT INTO sale_items (sale_id, sale_created_at, menu_item_id, qty, unit_price_cents, unit_cost_cents)
+       SELECT * FROM unnest($1::uuid[], $2::timestamptz[], $3::uuid[], $4::int[], $5::int[], $6::int[])`,
+      [lines.saleId, lines.at, lines.item, lines.qty, lines.price, lines.cost],
+    );
+
+    // --- Purchases (weekly menu-item restocks) + matching "inventory" expenses --
+    let purchaseCount = 0;
+    for (let d = 3; d < DAYS; d += 7) {
+      const weekSold = MENU.map((_, i) =>
+        soldPerDay.slice(Math.max(0, d - 6), d + 1).reduce((s, day) => s + day[i], 0),
+      );
+      for (let i = 0; i < MENU.length; i++) {
+        const qty = Math.max(6, Math.round(weekSold[i] * 1.1));
+        const totalCost = qty * MENU[i].cost;
+        const at = new Date(dayStart(d).getTime() + 7 * 3_600_000);
+        if (at.getTime() > now) continue;
+        await client.query(
+          `INSERT INTO purchases (menu_item_id, qty, total_cost_cents, payment_method, created_at)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [menuIds[i], qty, totalCost, i % 2 === 0 ? "debit" : "cash", iso(at)],
+        );
+        await client.query(
+          `INSERT INTO expenses (type, amount_cents, date) VALUES ('inventory', $1, $2)`,
+          [totalCost, dateOnly(at)],
+        );
+        purchaseCount++;
+      }
+    }
+
+    // --- Rent + salary on the 1st of each month in range -------------------
+    for (let d = 0; d < DAYS; d++) {
+      if (dayStart(d).getUTCDate() === 1) {
+        await client.query(
+          `INSERT INTO expenses (type, amount_cents, date) VALUES ('rent', 50000, $1), ('salary', 30000, $1)`,
+          [dateOnly(dayStart(d))],
+        );
+      }
+    }
+    await client.query(
+      `INSERT INTO expenses (type, amount_cents, date) VALUES ('other', 1800, $1), ('other', 3500, $2)`,
+      [dateOnly(dayStart(9)), dateOnly(dayStart(21))],
+    );
+
+    // --- Back-room inventory + stock ledger ---------------------------------
+    // Ledger = opening stock + weekly purchases - daily use - occasional waste.
+    // The opening amount is solved so the ledger sums exactly to `finalStock`.
+    let movementCount = 0;
+    for (const item of INVENTORY) {
+      const mv = { at: [] as string[], qty: [] as number[], reason: [] as string[] };
+      const add = (at: Date, qty: number, reason: string) => {
+        const q = Math.round(qty * 100) / 100;
+        if (q === 0 || at.getTime() > now) return;
+        mv.at.push(iso(at));
+        mv.qty.push(q);
+        mv.reason.push(reason);
+      };
+
+      let net = 0; // everything after opening
+      for (let d = 0; d < DAYS; d++) {
+        const weekend = [0, 6].includes(dayStart(d).getUTCDay());
+        const use = Math.round(item.daily * (weekend ? 1.3 : 1) * (0.8 + rand() * 0.4) * 100) / 100;
+        const at = new Date(dayStart(d).getTime() + 18 * 3_600_000);
+        add(at, -use, "use");
+        net -= use;
+        if (rand() < 0.04) {
+          const waste = Math.round(item.daily * 0.5 * 100) / 100;
+          add(new Date(at.getTime() + 600_000), -waste, "waste");
+          net -= waste;
+        }
+        if (d % 7 === 2) {
+          const buy = Math.round(item.daily * 7 * 100) / 100;
+          add(new Date(dayStart(d).getTime() + 7 * 3_600_000), buy, "purchase");
+          net += buy;
+        }
+      }
+      const opening = Math.round((item.finalStock - net) * 100) / 100;
+      const first = [iso(new Date(dayStart(0).getTime() + 6 * 3_600_000)), opening];
+
+      const { rows } = await client.query<{ id: string }>(
+        `INSERT INTO inventory_items (name, category, unit, stock, reorder_level, unit_cost_cents, image_public_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+        [
+          item.name,
+          item.category,
+          item.unit,
+          item.finalStock,
+          item.reorder,
+          item.unitCost,
+          `kwhab/inventory/${item.name.toLowerCase().replace(/\s+/g, "-")}`,
+        ],
+      );
+      const itemId = rows[0].id;
+      await client.query(
+        `INSERT INTO stock_movements (inventory_item_id, created_at, change_qty, reason)
+         SELECT $1, * FROM unnest($2::timestamptz[], $3::numeric[], $4::text[])`,
+        [itemId, [first[0], ...mv.at], [first[1], ...mv.qty], ["purchase", ...mv.reason]],
+      );
+      movementCount += mv.at.length + 1;
+    }
+
+    // Make the daily aggregate include the data we just inserted.
+    await client.query("COMMIT");
+    await client.query(`CALL refresh_continuous_aggregate('sales_daily', NULL, NULL)`);
+
+    console.log(
+      `Seeded ${MENU.length} menu items, ${INVENTORY.length} inventory items, ${sales.id.length} sales ` +
+        `(${lines.qty.length} lines), ${purchaseCount} purchases, ${movementCount} stock movements.`,
+    );
+  } catch (err) {
+    await client.query("ROLLBACK").catch(() => {});
+    throw err;
+  } finally {
+    await client.end();
+  }
 }
 
 main().catch((err) => {

@@ -2,6 +2,7 @@
 // TODO(dev1): replace each usage in src/app/api with a real query via src/lib/db.ts.
 import type {
   DaySummary,
+  InventoryItem,
   Expense,
   MenuItem,
   Purchase,
@@ -51,6 +52,29 @@ export const mockMenu: MenuItem[] = [
     costCents: 25,
     stock: 3,
     reorderLevel: 8,
+  },
+];
+
+export const mockSupplies: InventoryItem[] = [
+  {
+    id: "i1",
+    name: "Coffee beans",
+    imagePublicId: "kwhab/inventory/coffee-beans",
+    category: "ingredient",
+    unit: "kg",
+    stock: 4.5,
+    reorderLevel: 3,
+    unitCostCents: 1800,
+  },
+  {
+    id: "i2",
+    name: "Paper cups",
+    imagePublicId: "kwhab/inventory/paper-cups",
+    category: "packaging",
+    unit: "pcs",
+    stock: 150,
+    reorderLevel: 100,
+    unitCostCents: 8,
   },
 ];
 

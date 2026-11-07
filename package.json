@@ -13,8 +13,8 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "db:schema": "psql \"$DATABASE_URL\" -f db/schema.sql",
-    "db:seed": "tsx scripts/seed.ts"
+    "db:schema": "tsx --env-file-if-exists=.env.local scripts/run-schema.ts",
+    "db:seed": "tsx --env-file-if-exists=.env.local scripts/seed.ts"
   },
   "dependencies": {
     "@google/genai": "3.0.0",
