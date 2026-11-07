@@ -6,20 +6,10 @@ import { StockLevel } from "@/components/stock/StockLevel";
 import { imageUrl } from "@/lib/integrations/cloudinary";
 import type { MenuItem, RestockSuggestion, TrendPoint } from "@/lib/types";
 
-// View only: this screen shows what is on the shelf and what to order. Buying happens outside the register.
+// View only: this screen shows what is on the shelf. Buying happens outside the register.
 
 const getJson = <T,>(url: string): Promise<T> =>
   fetch(url).then((r) => (r.ok ? r.json() : Promise.reject(new Error(url))));
-
-/** Plain words for how long the stock lasts. */
-function lasts(stock: number, days: number): string {
-  if (stock <= 0) return "None left";
-  return days < 1
-    ? "Runs out today"
-    : days === 1
-      ? "Lasts about 1 day"
-      : `Lasts about ${days} days`;
-}
 
 export default function StockPage() {
   const [menu, setMenu] = useState<MenuItem[] | null>(null);
@@ -66,8 +56,6 @@ export default function StockPage() {
     );
   }
 
-  const byId = new Map(menu.map((m) => [m.id, m]));
-
   // Selling pace = sold in the last 7 days of the trend, per day.
   const dates = [...new Set(trends.map((t) => t.date))].sort();
   const lastWeek = new Set(dates.slice(-7));
@@ -77,13 +65,8 @@ export default function StockPage() {
       .filter((t) => t.menuItemId === id && lastWeek.has(t.date))
       .reduce((s, t) => s + t.qtySold, 0) / 7;
 
-  const toOrder = restock.flatMap((s) => {
-    const item = byId.get(s.menuItemId);
-    // daysLeft comes from the server's forecast; fall back to last week's pace if it is missing.
-    const pace = item ? perDay(item.id) : 0;
-    const days = s.daysLeft ?? (pace > 0 ? Math.floor(s.stock / pace) : 14);
-    return item ? [{ item, qty: s.suggestedQty, days }] : [];
-  });
+  // Items the server says to reorder (at the reorder level or running out within 3 days).
+  const runningLow = new Set(restock.map((s) => s.menuItemId));
 
   const sold = menu
     .map((m) => ({
@@ -98,43 +81,6 @@ export default function StockPage() {
   return (
     <div className="flex flex-col gap-6 lg:grid lg:h-full lg:grid-cols-[1fr_minmax(22rem,26rem)]">
       <div className="flex flex-col gap-6 lg:overflow-y-auto lg:pr-1">
-        {toOrder.length > 0 && (
-          <section aria-labelledby="order-more" className="rounded-tile bg-butter/40 p-5">
-            <h2 id="order-more" className="mb-3 text-2xl font-bold">
-              Order more soon
-            </h2>
-            <ul className="flex flex-col gap-3">
-              {toOrder.map(({ item, qty, days }) => (
-                <li
-                  key={item.id}
-                  className="flex flex-wrap items-center gap-4 rounded-2xl bg-white p-3 ring-1 ring-ink/10"
-                >
-                  <Image
-                    src={imageUrl(item.imagePublicId, 96)}
-                    alt=""
-                    width={56}
-                    height={56}
-                    unoptimized
-                    className="size-14"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xl font-semibold">
-                      {item.name}: {item.stock} left
-                    </p>
-                    <p className="text-lg text-ink-soft">
-                      Sells about {Math.round(perDay(item.id))} a day. {lasts(item.stock, days)}.
-                    </p>
-                  </div>
-                  <p className="text-right">
-                    <span className="block text-base text-ink-soft">Order about</span>
-                    <span className="text-number font-bold tabular-nums">{qty}</span>
-                  </p>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-
         <section
           aria-label="Shelf"
           className="grid auto-rows-max gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
@@ -164,7 +110,7 @@ export default function StockPage() {
               <StockLevel
                 stock={item.stock}
                 reorderLevel={item.reorderLevel}
-                low={toOrder.some((o) => o.item.id === item.id)}
+                low={runningLow.has(item.id)}
                 capacity={Math.ceil(perDay(item.id) * 7)}
               />
             </div>
