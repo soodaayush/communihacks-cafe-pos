@@ -3,14 +3,15 @@
 import Image from "next/image";
 import { imageUrl } from "@/lib/integrations/cloudinary";
 import { formatCents } from "@/lib/money";
-import type { MenuItem, SaleItem } from "@/lib/types";
+import { sizeLabel } from "@/lib/sizes";
+import type { DrinkSize, MenuItem, SaleItem } from "@/lib/types";
 
 export interface OrderTrayProps {
   items: SaleItem[];
   menu: MenuItem[];
   totalCents: number;
-  onAdd: (menuItemId: string) => void;
-  onRemove: (menuItemId: string) => void;
+  onAdd: (menuItemId: string, size?: DrinkSize) => void;
+  onRemove: (menuItemId: string, size?: DrinkSize) => void;
   onClear: () => void;
   onPay: () => void;
 }
@@ -75,9 +76,17 @@ export function OrderTray({
           {items.map((line) => {
             const item = byId.get(line.menuItemId);
             if (!item) return null;
-            const atMax = line.qty >= item.stock;
+            // All sizes of a drink share its stock.
+            const inOrder = items
+              .filter((l) => l.menuItemId === line.menuItemId)
+              .reduce((s, l) => s + l.qty, 0);
+            const atMax = inOrder >= item.stock;
+            const name = line.size ? `${item.name} (${sizeLabel(line.size)})` : item.name;
             return (
-              <li key={line.menuItemId} className="flex items-center gap-3 py-3">
+              <li
+                key={`${line.menuItemId}|${line.size ?? ""}`}
+                className="flex items-center gap-3 py-3"
+              >
                 <Image
                   src={imageUrl(item.imagePublicId, 96)}
                   alt=""
@@ -87,7 +96,7 @@ export function OrderTray({
                   className="size-12"
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-lg font-semibold">{item.name}</p>
+                  <p className="truncate text-lg font-semibold">{name}</p>
                   <p className="text-base text-ink-soft tabular-nums">
                     {line.qty} × {formatCents(line.unitPriceCents)}
                   </p>
@@ -95,23 +104,23 @@ export function OrderTray({
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => onRemove(line.menuItemId)}
-                    aria-label={`One less ${item.name}`}
+                    onClick={() => onRemove(line.menuItemId, line.size)}
+                    aria-label={`One less ${name}`}
                     className={stepBtn}
                   >
                     −
                   </button>
                   <span
                     className="w-8 text-center text-2xl font-bold tabular-nums"
-                    aria-label={`${line.qty} ${item.name}`}
+                    aria-label={`${line.qty} ${name}`}
                   >
                     {line.qty}
                   </span>
                   <button
                     type="button"
-                    onClick={() => onAdd(line.menuItemId)}
+                    onClick={() => onAdd(line.menuItemId, line.size)}
                     disabled={atMax}
-                    aria-label={`One more ${item.name}`}
+                    aria-label={`One more ${name}`}
                     className={stepBtn}
                   >
                     +

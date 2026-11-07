@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import { ItemTile } from "@/components/register/ItemTile";
 import { OrderTray } from "@/components/register/OrderTray";
 import { PaymentChoice } from "@/components/register/PaymentChoice";
-import type { MenuItem, PaymentMethod, SaleItem } from "@/lib/types";
+import { SizePicker } from "@/components/register/SizePicker";
+import { hasSizes, sizePriceCents } from "@/lib/sizes";
+import type { DrinkSize, MenuItem, PaymentMethod, SaleItem } from "@/lib/types";
 
 // The open order survives switching tabs (and a refresh) by living in this browser tab's sessionStorage.
 const ORDER_KEY = "register-order";
@@ -25,6 +27,7 @@ export default function RegisterPage() {
   // Safe to read storage here: the first render shows "Loading…" (no order) on server and client alike.
   const [order, setOrder] = useState<SaleItem[]>(loadOrder);
   const [paying, setPaying] = useState(false);
+  const [sizing, setSizing] = useState<MenuItem | null>(null);
 
   useEffect(() => {
     try {
@@ -42,27 +45,32 @@ export default function RegisterPage() {
   }
   useEffect(loadMenu, []);
 
-  const qtyOf = (id: string) => order.find((l) => l.menuItemId === id)?.qty ?? 0;
+  // Each size of a drink is its own order line; stock counts all sizes together.
+  const qtyOf = (id: string) =>
+    order.filter((l) => l.menuItemId === id).reduce((s, l) => s + l.qty, 0);
   const totalCents = order.reduce((s, l) => s + l.qty * l.unitPriceCents, 0);
+  const isLine = (l: SaleItem, id: string, size?: DrinkSize) =>
+    l.menuItemId === id && l.size === size;
 
-  function add(item: MenuItem) {
+  function add(item: MenuItem, size?: DrinkSize) {
     setOrder((o) =>
-      o.some((l) => l.menuItemId === item.id)
-        ? o.map((l) => (l.menuItemId === item.id ? { ...l, qty: l.qty + 1 } : l))
+      o.some((l) => isLine(l, item.id, size))
+        ? o.map((l) => (isLine(l, item.id, size) ? { ...l, qty: l.qty + 1 } : l))
         : [
             ...o,
             {
               menuItemId: item.id,
+              ...(size && { size }),
               qty: 1,
-              unitPriceCents: item.priceCents,
+              unitPriceCents: sizePriceCents(item.priceCents, size),
               unitCostCents: item.costCents,
             },
           ],
     );
   }
-  function removeOne(id: string) {
+  function removeOne(id: string, size?: DrinkSize) {
     setOrder((o) =>
-      o.map((l) => (l.menuItemId === id ? { ...l, qty: l.qty - 1 } : l)).filter((l) => l.qty > 0),
+      o.map((l) => (isLine(l, id, size) ? { ...l, qty: l.qty - 1 } : l)).filter((l) => l.qty > 0),
     );
   }
 
@@ -108,7 +116,12 @@ export default function RegisterPage() {
         className="grid auto-rows-max content-start gap-4 sm:grid-cols-2 lg:overflow-y-auto lg:pr-1 xl:grid-cols-4"
       >
         {menu.map((item) => (
-          <ItemTile key={item.id} item={item} qtyInTray={qtyOf(item.id)} onTap={add} />
+          <ItemTile
+            key={item.id}
+            item={item}
+            qtyInTray={qtyOf(item.id)}
+            onTap={(it) => (hasSizes(it.category) ? setSizing(it) : add(it))}
+          />
         ))}
       </section>
 
@@ -116,14 +129,25 @@ export default function RegisterPage() {
         items={order}
         menu={menu}
         totalCents={totalCents}
-        onAdd={(id) => {
+        onAdd={(id, size) => {
           const item = menu.find((m) => m.id === id);
-          if (item) add(item);
+          if (item) add(item, size);
         }}
         onRemove={removeOne}
         onClear={() => setOrder([])}
         onPay={() => setPaying(true)}
       />
+
+      {sizing && (
+        <SizePicker
+          item={sizing}
+          onPick={(size) => {
+            add(sizing, size);
+            setSizing(null);
+          }}
+          onClose={() => setSizing(null)}
+        />
+      )}
 
       {paying && (
         <PaymentChoice

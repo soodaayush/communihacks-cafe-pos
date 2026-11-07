@@ -36,8 +36,12 @@ export interface StockMovement {
   reason: StockReason;
 }
 
+export type DrinkSize = "S" | "M" | "L";
+
 export interface SaleItem {
   menuItemId: string;
+  /** Drinks only. Missing on a drink means small. Price rules live in src/lib/sizes.ts. */
+  size?: DrinkSize;
   qty: number;
   unitPriceCents: number;
   unitCostCents: number;

@@ -55,7 +55,8 @@ CREATE TABLE IF NOT EXISTS sale_items (
   menu_item_id     uuid        NOT NULL REFERENCES menu_items (id),
   qty              integer     NOT NULL CHECK (qty > 0),
   unit_price_cents integer     NOT NULL CHECK (unit_price_cents >= 0),
-  unit_cost_cents  integer     NOT NULL CHECK (unit_cost_cents >= 0)
+  unit_cost_cents  integer     NOT NULL CHECK (unit_cost_cents >= 0),
+  size             text        -- 'S' / 'M' / 'L' for drinks (checked in the API), NULL otherwise
 ) WITH (
   tsdb.hypertable,
   tsdb.partition_column = 'sale_created_at',
@@ -65,6 +66,9 @@ CREATE TABLE IF NOT EXISTS sale_items (
 -- Chunks older than a week move to compressed columnstore automatically (sale_items needs it spelled
 -- out when the table was converted in place; if_not_exists makes this a no-op otherwise).
 CALL add_columnstore_policy('sale_items', after => INTERVAL '7 days', if_not_exists => TRUE);
+-- Databases created before drink sizes existed: add the column (old rows stay NULL = small).
+-- VERIFY against docs: adding a nullable column works on a hypertable with columnstore enabled.
+ALTER TABLE sale_items ADD COLUMN IF NOT EXISTS size text;
 CREATE INDEX IF NOT EXISTS sale_items_sale_idx ON sale_items (sale_id, sale_created_at);
 CREATE INDEX IF NOT EXISTS sale_items_item_time_idx ON sale_items (menu_item_id, sale_created_at DESC);
 
