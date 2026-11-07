@@ -1,15 +1,19 @@
 import { HttpError, dbOrMock, isPositiveInt, isUuid, readJson } from "@/lib/api";
-import { mockSale } from "@/lib/mock-data";
+import { applyMockSale, mockSale } from "@/lib/mock-data";
 import { createSale } from "@/lib/sales";
 import type { PaymentMethod } from "@/lib/types";
 
 // Body: Omit<Sale, "id" | "createdAt">. Only paymentMethod and items[].{menuItemId, qty} are used:
 // prices, costs and the total come from menu_items so the client cannot change them.
-export function POST(request: Request) {
+export async function POST(request: Request) {
+  const body = await readJson(request).catch(() => null);
   return dbOrMock(
-    () => mockSale,
+    () => {
+      applyMockSale(body?.items); // no DB: still take the items off the mock shelf
+      return mockSale;
+    },
     async () => {
-      const body = await readJson(request);
+      if (!body) throw new HttpError("Body must be a JSON object");
       const paymentMethod = body.paymentMethod as PaymentMethod;
       if (paymentMethod !== "cash" && paymentMethod !== "debit")
         throw new HttpError("paymentMethod must be cash or debit");

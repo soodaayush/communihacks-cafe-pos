@@ -9,11 +9,9 @@ import type { RestockSuggestion } from "@/lib/types";
 //   suggestedQty = expected sales over the next 7 days (or double the reorder level, if more) - stock
 // An item is suggested when it is at its reorder level or will run out within 3 days.
 export function GET() {
-  return dbOrMock(
-    () => mockRestock,
-    () =>
-      query<RestockSuggestion>(
-        `WITH today AS (
+  return dbOrMock(mockRestock, () =>
+    query<RestockSuggestion>(
+      `WITH today AS (
            SELECT ((now() AT TIME ZONE 'UTC')::date::timestamp AT TIME ZONE 'UTC') AS d
          ),
          pace AS (   -- average units sold per weekday, per item
@@ -51,6 +49,6 @@ export function GET() {
            JOIN forecast f ON f.menu_item_id = m.id
           WHERE m.stock <= m.reorder_level OR f.days_left <= 3
           ORDER BY f.days_left, m.name`,
-      ),
+    ),
   );
 }
