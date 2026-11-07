@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { Icon, type IconName } from "@/components/icons/Icon";
 import { BackRoom } from "@/components/stock/BackRoom";
+import { CountButton } from "@/components/stock/CountButton";
 import { CountSheet } from "@/components/stock/CountSheet";
 import { StockLevel } from "@/components/stock/StockLevel";
 import { Trends } from "@/components/stock/Trends";
@@ -131,10 +132,10 @@ export default function StockPage() {
             <Icon name="crate" className="size-6" />
             Drinks are made fresh. Their ingredients are in &ldquo;In the back&rdquo;.
           </p>
-          {/* On big screens the tiles share the whole height (never shorter than 14.5rem). */}
+          {/* On big screens the tiles share the whole height (never shorter than 11.5rem). */}
           <section
             aria-label="Shelf"
-            className="grid gap-4 sm:grid-cols-2 lg:min-h-0 lg:flex-1 lg:auto-rows-[minmax(14.5rem,1fr)] lg:overflow-y-auto lg:pr-1"
+            className="grid gap-4 sm:grid-cols-2 lg:min-h-0 lg:flex-1 lg:auto-rows-[minmax(11.5rem,1fr)] lg:overflow-y-auto lg:pr-1"
           >
             {menu
               .filter((item) => item.category !== "drink")
@@ -162,21 +163,18 @@ export default function StockPage() {
                       <span className="text-base text-ink-soft lg:text-lg">left</span>
                     </p>
                   </div>
-                  <StockLevel
-                    stock={item.stock}
-                    reorderLevel={item.reorderLevel}
-                    low={runningLow.has(item.id)}
-                    capacity={Math.ceil(perDay(item.id) * 7)}
-                  />
-                  <button
-                    type="button"
-                    aria-label={`Count ${item.name}`}
-                    onClick={() => setCounting(item)}
-                    className="flex min-h-12 items-center justify-center gap-2 rounded-tile bg-cream text-lg font-semibold ring-1 ring-ink/15 lg:text-xl 2xl:min-h-16"
-                  >
-                    <Icon name="pencil" className="size-6" />
-                    Count
-                  </button>
+                  {/* The level fills the row; the small pencil sits at the bottom-right. */}
+                  <div className="flex items-end gap-3">
+                    <div className="min-w-0 flex-1">
+                      <StockLevel
+                        stock={item.stock}
+                        reorderLevel={item.reorderLevel}
+                        low={runningLow.has(item.id)}
+                        capacity={Math.ceil(perDay(item.id) * 7)}
+                      />
+                    </div>
+                    <CountButton name={item.name} onClick={() => setCounting(item)} />
+                  </div>
                 </div>
               ))}
           </section>

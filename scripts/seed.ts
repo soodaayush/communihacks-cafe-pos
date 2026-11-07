@@ -92,7 +92,7 @@ const MENU = [
     price: 100,
     cost: 25,
     popularity: 8,
-    finalStock: 3,
+    finalStock: 0, // sold out on purpose: shows the red "Need to buy" state
     reorder: 8,
   },
   {
@@ -194,7 +194,20 @@ const INVENTORY: Supply[] = [
     full: 200,
     reorder: 60,
   },
-  // Every drink goes in a cup with a lid: counted, used by sales too.
+  // Sugar comes in single pouches, so it is counted in pouches. Coffee and hot chocolate take more
+  // pouches in bigger cups. Bought in boxes of 500.
+  {
+    name: "Sugar",
+    category: "ingredient",
+    unit: "pouches",
+    pack: "boxes",
+    packSize: 500,
+    cost: 600,
+    full: 1000,
+    reorder: 150,
+  },
+  // Every drink goes in a cup with a lid: counted, used by sales too. "Low" is about one busy day's
+  // worth (about 50 a day), not a week's.
   {
     name: "Paper cups",
     category: "packaging",
@@ -203,7 +216,7 @@ const INVENTORY: Supply[] = [
     packSize: 50,
     cost: 400,
     refillTo: 600,
-    reorder: 150,
+    reorder: 60,
   },
   {
     name: "Cup lids",
@@ -213,31 +226,10 @@ const INVENTORY: Supply[] = [
     packSize: 50,
     cost: 200,
     refillTo: 500,
-    reorder: 150,
+    reorder: 60,
   },
   // Kitchen and supplies: counted, use estimated per day.
-  {
-    name: "Flour",
-    category: "ingredient",
-    unit: "bags",
-    pack: "bags",
-    packSize: 1,
-    cost: 120,
-    daily: 0.8,
-    finalStock: 8,
-    reorder: 4,
-  },
-  {
-    name: "Sugar",
-    category: "ingredient",
-    unit: "bags",
-    pack: "bags",
-    packSize: 1,
-    cost: 110,
-    daily: 0.4,
-    finalStock: 6,
-    reorder: 3,
-  },
+  // Out of stock on purpose, so the red "Need to buy" state is visible in the data.
   {
     name: "Eggs",
     category: "ingredient",
@@ -246,7 +238,7 @@ const INVENTORY: Supply[] = [
     packSize: 1,
     cost: 450,
     daily: 1.2,
-    finalStock: 2,
+    finalStock: 0,
     reorder: 4,
   },
   {
@@ -260,17 +252,6 @@ const INVENTORY: Supply[] = [
     finalStock: 10,
     reorder: 6,
   },
-  {
-    name: "Napkins",
-    category: "supply",
-    unit: "cartons",
-    pack: "cartons",
-    packSize: 1,
-    cost: 250,
-    daily: 0.4,
-    finalStock: 5,
-    reorder: 3,
-  },
 ];
 
 // What one drink of each size uses, in the ingredient's unit: [small, medium, large].
@@ -279,9 +260,14 @@ const CUP_AND_LID: [string, number[]][] = [
   ["Cup lids", [1, 1, 1]],
 ];
 const RECIPES: Record<string, [string, number[]][]> = {
-  Coffee: [["Coffee beans", [14, 18, 22]], ...CUP_AND_LID],
+  Coffee: [["Coffee beans", [14, 18, 22]], ["Sugar", [1, 2, 3]], ...CUP_AND_LID],
   Tea: [["Tea leaves", [2, 3, 4]], ...CUP_AND_LID],
-  "Hot Chocolate": [["Cocoa powder", [15, 20, 25]], ["Milk", [200, 300, 400]], ...CUP_AND_LID],
+  "Hot Chocolate": [
+    ["Cocoa powder", [15, 20, 25]],
+    ["Milk", [200, 300, 400]],
+    ["Sugar", [1, 2, 3]],
+    ...CUP_AND_LID,
+  ],
   Juice: [["Oranges", [2, 3, 4]], ...CUP_AND_LID], // freshly squeezed
   Lemonade: [["Lemonade", [250, 350, 500]], ...CUP_AND_LID],
 };

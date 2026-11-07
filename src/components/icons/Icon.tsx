@@ -6,7 +6,6 @@ const SAGE = "#b8d4c0";
 const SKY = "#b9d3e6";
 const BLUSH = "#f0c8c4";
 const BUTTER = "#f3e3ad";
-const LAVENDER = "#d4cbe8";
 const WHITE = "#fffdf9";
 const TAN = "#ead9c6";
 const BROWN = "#a07c5e";
@@ -168,18 +167,13 @@ const ICONS = {
       <path d="M21 28h6" />
     </>
   ),
-  flour: (
-    <>
-      <path d="M13 14h22l5 27H8z" fill={WHITE} />
-      <path d="M15 14l9-8 9 8" fill={BUTTER} />
-      <path d="M24 22v13M20 26l4-3 4 3M20 32l4-3 4 3" />
-    </>
-  ),
   sugar: (
     <>
-      <rect x="6" y="26" width="16" height="16" rx="3" fill={WHITE} />
-      <rect x="24" y="22" width="16" height="16" rx="3" fill={SKY} />
-      <rect x="14" y="8" width="16" height="16" rx="3" fill={BLUSH} />
+      <path d="M8 16h14v26H8z" fill={SKY} transform="rotate(-8 15 29)" />
+      <path d="M8 16h14" transform="rotate(-8 15 29)" strokeDasharray="2.5 3" />
+      <path d="M26 8h14v32H26z" fill={WHITE} transform="rotate(7 33 24)" />
+      <path d="M26 8h14" transform="rotate(7 33 24)" strokeDasharray="2.5 3" />
+      <path d="M29 24h8M29 30h8" transform="rotate(7 33 24)" strokeWidth={2.5} />
     </>
   ),
   eggs: (
@@ -209,22 +203,6 @@ const ICONS = {
       <ellipse cx="24" cy="26" rx="17" ry="6.5" fill={WHITE} />
       <ellipse cx="24" cy="18" rx="17" ry="6.5" fill={SKY} />
       <ellipse cx="24" cy="18" rx="6" ry="2" fill={WHITE} />
-    </>
-  ),
-  napkins: (
-    <>
-      <path d="M9 16l30-6 2 21-30 6z" fill={LAVENDER} />
-      <path d="M9 16l30-6" />
-      <path d="M13 38l28-6" />
-      <path d="M17 22l18-3.5" />
-    </>
-  ),
-  spray: (
-    <>
-      <path d="M17 21h15v18a3 3 0 0 1-3 3H20a3 3 0 0 1-3-3z" fill={SKY} />
-      <rect x="21" y="14" width="7" height="7" rx="1" fill={WHITE} />
-      <path d="M17 8h14l5 5H22z" fill={BLUSH} />
-      <path d="M40 9v.1M41 15v.1M36 4v.1" strokeWidth={4} />
     </>
   ),
   teaLeaves: (
