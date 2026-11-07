@@ -1,6 +1,6 @@
 import { dbOrMock } from "@/lib/api";
 import { query } from "@/lib/db";
-import type { TigerStats } from "@/lib/demo-types";
+import type { TigerStats } from "@/lib/tiger-types";
 
 const mock: TigerStats = {
   hypertables: [
@@ -10,7 +10,7 @@ const mock: TigerStats = {
   totals: { sales: 0, saleLines: 0, stockMovements: 0 },
 };
 
-// GET /api/demo/tiger  ->  what Tiger Data is doing under the app: hypertable chunks, columnstore
+// GET /api/tiger  ->  what Tiger Data is doing under the app: hypertable chunks, columnstore
 // compression, continuous aggregates, and row counts. Straight from TimescaleDB's own catalog views.
 export function GET() {
   return dbOrMock<TigerStats>(

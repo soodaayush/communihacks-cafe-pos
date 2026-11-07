@@ -1,4 +1,4 @@
-// Payloads for the demo/showcase endpoints (/api/demo/*).
+// Payloads for the Tiger Data endpoints (/api/tiger, /api/tiger/stats), shown on the Stock tab.
 
 export interface HypertableStats {
   name: string;
@@ -14,13 +14,8 @@ export interface TigerStats {
   totals: { sales: number; saleLines: number; stockMovements: number };
 }
 
-export interface RushResult {
-  created: number;
-  moneyInCents: number;
-}
-
 // Computed in the database with TimescaleDB Toolkit hyperfunctions (percentile_agg, stats_agg).
-export interface Insights {
+export interface SaleStats {
   basket: { medianCents: number; p90Cents: number; avgCents: number }; // size of one sale, last 30 days
   daily: { avgCents: number; stddevCents: number }; // money in per day, last 30 days
 }

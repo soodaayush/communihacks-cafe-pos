@@ -1,16 +1,16 @@
 import { dbOrMock } from "@/lib/api";
 import { query } from "@/lib/db";
-import type { Insights } from "@/lib/demo-types";
+import type { SaleStats } from "@/lib/tiger-types";
 
-const mock: Insights = {
+const mock: SaleStats = {
   basket: { medianCents: 400, p90Cents: 700, avgCents: 410 },
   daily: { avgCents: 17000, stddevCents: 6000 },
 };
 
-// GET /api/demo/stats  ->  statistics computed inside the database with TimescaleDB Toolkit
+// GET /api/tiger/stats  ->  statistics computed inside the database with TimescaleDB Toolkit
 // hyperfunctions: percentile_agg / approx_percentile for basket size, stats_agg for daily money in.
 export function GET() {
-  return dbOrMock<Insights>(
+  return dbOrMock<SaleStats>(
     () => mock,
     async () => {
       const rows = await query<{

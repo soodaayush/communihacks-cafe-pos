@@ -25,7 +25,7 @@ const MENU = [
     price: 200,
     cost: 60,
     popularity: 10,
-    finalStock: 40,
+    finalStock: 100,
     reorder: 10,
   },
   {
@@ -43,7 +43,7 @@ const MENU = [
     price: 250,
     cost: 80,
     popularity: 4,
-    finalStock: 22,
+    finalStock: 55,
     reorder: 8,
   },
   {
@@ -52,7 +52,7 @@ const MENU = [
     price: 200,
     cost: 70,
     popularity: 4,
-    finalStock: 18,
+    finalStock: 50,
     reorder: 8,
   },
   {
@@ -61,7 +61,7 @@ const MENU = [
     price: 250,
     cost: 90,
     popularity: 6,
-    finalStock: 12,
+    finalStock: 80,
     reorder: 6,
   },
   {
@@ -79,7 +79,7 @@ const MENU = [
     price: 450,
     cost: 180,
     popularity: 3,
-    finalStock: 14,
+    finalStock: 40,
     reorder: 5,
   },
   {
@@ -88,7 +88,7 @@ const MENU = [
     price: 175,
     cost: 45,
     popularity: 4,
-    finalStock: 25,
+    finalStock: 60,
     reorder: 8,
   },
 ];
@@ -431,7 +431,7 @@ async function main() {
       await client.query(`CALL refresh_continuous_aggregate('${view}', NULL, ${end})`);
     }
 
-    // Compress chunks older than a week now (the policy would do it within the hour) so the demo's
+    // Compress chunks older than a week now (the policy would do it within the hour) so the
     // compression numbers are real straight after seeding.
     const { rows: oldChunks } = await client.query<{ chunk: string }>(
       `SELECT format('%I.%I', chunk_schema, chunk_name) AS chunk
