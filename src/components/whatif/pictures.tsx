@@ -3,11 +3,18 @@
 // Pictures used by the What-if screen. Each one stands for one idea, every time it appears:
 //   jar = money you keep in a day, bar = money from one sale, person = one customer.
 // They animate in from empty, and glide when their amounts change.
+import type { ReactNode } from "react";
 import { useEntered } from "./motion";
 
-export function Person({ className = "size-8" }: { className?: string }) {
+export function Person({
+  className = "size-8",
+  color = "text-ink/70",
+}: {
+  className?: string;
+  color?: string;
+}) {
   return (
-    <svg aria-hidden viewBox="0 0 24 24" className={`${className} text-ink/70`} fill="currentColor">
+    <svg aria-hidden viewBox="0 0 24 24" className={`${className} ${color}`} fill="currentColor">
       <circle cx="12" cy="7" r="4" />
       <path d="M4 21a8 8 0 0 1 16 0z" />
     </svg>
@@ -29,6 +36,44 @@ export function People({ count, className = "size-9" }: { count: number; classNa
           <Person className={className} />
         </span>
       ))}
+    </span>
+  );
+}
+
+const MAX_FACES = 40;
+
+/**
+ * How many people buy, before and after a price change. Everyone starts on screen; then the
+ * people who stop buying fade away, or the new customers pop in (in green).
+ */
+export function PeopleChange({ from, to }: { from: number; to: number }) {
+  const entered = useEntered();
+  const total = Math.min(Math.max(from, to), MAX_FACES);
+  const stay = Math.min(from, to, MAX_FACES);
+  return (
+    <span aria-hidden className="flex max-w-lg flex-wrap justify-center gap-1">
+      {Array.from({ length: total }, (_, i) => {
+        const leaving = to < from && i >= stay;
+        const joining = to > from && i >= stay;
+        const state = leaving
+          ? entered
+            ? "translate-y-2 opacity-15"
+            : "opacity-100"
+          : joining
+            ? entered
+              ? "scale-100 opacity-100"
+              : "scale-50 opacity-0"
+            : "opacity-100";
+        return (
+          <span
+            key={i}
+            className={`motion-safe:transition-[opacity,scale,translate] motion-safe:duration-500 ${state}`}
+            style={{ transitionDelay: `${500 + (i - stay) * 60}ms` }}
+          >
+            <Person className="size-8" color={joining ? "text-[#6f9f7c]" : "text-ink/70"} />
+          </span>
+        );
+      })}
     </span>
   );
 }
@@ -80,6 +125,30 @@ export interface BarPart {
   cents: number;
   className: string;
   label?: string;
+  /** A small picture saying what this part of the money is for. */
+  icon?: ReactNode;
+}
+
+/** A small jar: "this money is yours". */
+export function MiniJar({ className = "size-9" }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      stroke="#4a4a55"
+      strokeWidth={2}
+    >
+      <path d="M8 3h8" strokeLinecap="round" />
+      <path d="M7 6h10v12a3 3 0 0 1-3 3h-4a3 3 0 0 1-3-3z" fill="#fffdf9" />
+      <path
+        d="M7.5 12h9v6a2.5 2.5 0 0 1-2.5 2.5h-4A2.5 2.5 0 0 1 7.5 18z"
+        fill="#b8d4c0"
+        stroke="none"
+      />
+    </svg>
+  );
 }
 
 /**
@@ -88,7 +157,7 @@ export interface BarPart {
  */
 export function MoneyBar({ parts, scale }: { parts: BarPart[]; scale: number }) {
   return (
-    <span aria-hidden className="flex h-16 w-full overflow-hidden rounded-2xl bg-ink/5">
+    <span aria-hidden className="flex h-20 w-full overflow-hidden rounded-2xl bg-ink/5">
       {parts.map((p, i) => (
         <BarSegment key={i} part={p} scale={scale} />
       ))}
@@ -101,10 +170,11 @@ function BarSegment({ part, scale }: { part: BarPart; scale: number }) {
   const pct = (Math.max(part.cents, 0) / scale) * 100;
   return (
     <span
-      className={`flex h-full items-center justify-center overflow-hidden text-xl font-bold whitespace-nowrap tabular-nums motion-safe:transition-[width,background-color] motion-safe:duration-500 motion-safe:ease-out ${part.className}`}
+      className={`flex h-full items-center justify-center gap-2 overflow-hidden text-xl font-bold whitespace-nowrap tabular-nums motion-safe:transition-[width,background-color,opacity] motion-safe:duration-500 motion-safe:ease-out ${part.className}`}
       style={{ width: `${entered ? pct : 0}%` }}
     >
-      {part.label && pct >= 18 ? part.label : null}
+      {pct >= 12 && part.icon}
+      {part.label && pct >= 30 ? part.label : null}
     </span>
   );
 }

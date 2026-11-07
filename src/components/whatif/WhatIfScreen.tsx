@@ -9,11 +9,10 @@ import { formatCents } from "@/lib/money";
 import type { MenuItem } from "@/lib/types";
 import { PRICE_STEP_CENTS, compare, outcome, priceRange, type Outcome } from "@/lib/whatif";
 import type { WhatIfData } from "@/lib/whatif-data";
+import { ItemPicker, TINT } from "./ItemPicker";
 import { WhatIfStory } from "./WhatIfStory";
 import { useTweened } from "./motion";
 import { Jar } from "./pictures";
-
-const TINT: Record<string, string> = { drink: "bg-sky/45", food: "bg-butter/55" };
 
 const fadeIn =
   "motion-safe:transition-[opacity,translate] motion-safe:duration-300 motion-safe:ease-out starting:translate-y-1 starting:opacity-0";
@@ -30,12 +29,14 @@ export function WhatIfScreen({ data }: { data: Promise<WhatIfData> }) {
   const item = menu.find((m) => m.id === itemId);
   const [priceCents, setPriceCents] = useState(item?.priceCents ?? 0);
   const [showHow, setShowHow] = useState(false);
+  const [picking, setPicking] = useState(false);
 
   if (!item) return <p className="text-xl text-ink-soft">No menu items yet.</p>;
 
   function pick(next: MenuItem) {
     setItemId(next.id);
     setPriceCents(next.priceCents);
+    setPicking(false);
   }
 
   const soldNow = soldPerDay[item.id] ?? 0;
@@ -55,38 +56,44 @@ export function WhatIfScreen({ data }: { data: Promise<WhatIfData> }) {
   return (
     <div className="flex flex-col gap-6 lg:grid lg:h-full lg:grid-cols-[minmax(0,1fr)_minmax(22rem,30rem)]">
       <div className="flex flex-col gap-6 lg:overflow-y-auto lg:p-1">
-        <section aria-label="Pick an item" className="grid grid-cols-3 gap-3 sm:grid-cols-4">
-          {menu.map((m) => {
-            const selected = m.id === item.id;
-            return (
-              <button
-                key={m.id}
-                type="button"
-                onClick={() => pick(m)}
-                aria-pressed={selected}
-                className={`flex flex-col overflow-hidden rounded-tile bg-white text-left motion-safe:transition-[box-shadow,scale] motion-safe:duration-200 motion-safe:active:scale-[0.97] ${selected ? "ring-4 ring-ink" : "ring-1 ring-ink/10"}`}
-              >
-                <span
-                  className={`flex h-20 items-center justify-center sm:h-24 ${TINT[m.category] ?? "bg-lavender/50"}`}
-                >
-                  <Image
-                    src={imageUrl(m.imagePublicId)}
-                    alt=""
-                    width={64}
-                    height={64}
-                    unoptimized
-                    className="h-16 w-auto sm:h-20"
-                  />
-                </span>
-                <span className="px-3 py-2 text-base leading-tight font-semibold sm:text-lg">
-                  {m.name}
-                </span>
-              </button>
-            );
-          })}
-        </section>
-
         <section className="flex flex-col gap-5 rounded-tile bg-white p-6 ring-1 ring-ink/10">
+          {/* The chosen item. Fixed height (the picture's), so long names never resize the card. */}
+          <div className="flex h-20 items-center gap-4">
+            <span
+              key={item.id}
+              className={`flex size-20 shrink-0 items-center justify-center rounded-2xl ${TINT[item.category] ?? "bg-lavender/50"} ${fadeIn}`}
+            >
+              <Image
+                src={imageUrl(item.imagePublicId)}
+                alt=""
+                width={64}
+                height={64}
+                unoptimized
+                className="size-16"
+              />
+            </span>
+            <span
+              key={`${item.id}-name`}
+              className={`line-clamp-2 min-w-0 flex-1 text-2xl leading-tight font-bold sm:text-3xl ${fadeIn}`}
+            >
+              {item.name}
+            </span>
+            <button
+              type="button"
+              onClick={() => setPicking(true)}
+              aria-label="Change item"
+              className="flex min-h-14 min-w-14 shrink-0 items-center justify-center gap-2 rounded-full bg-cream px-4 text-xl font-semibold ring-1 ring-ink/10 motion-safe:transition-transform motion-safe:active:scale-95 sm:px-5"
+            >
+              <svg aria-hidden viewBox="0 0 24 24" className="size-6" fill="currentColor">
+                <rect x="3" y="3" width="8" height="8" rx="2" />
+                <rect x="13" y="3" width="8" height="8" rx="2" />
+                <rect x="3" y="13" width="8" height="8" rx="2" />
+                <rect x="13" y="13" width="8" height="8" rx="2" />
+              </svg>
+              <span className="hidden sm:inline">Change</span>
+            </button>
+          </div>
+          <hr className="border-ink/10" />
           <div className="flex items-center justify-between gap-4">
             <div>
               <h2 className="text-2xl font-semibold">New price</h2>
@@ -163,8 +170,17 @@ export function WhatIfScreen({ data }: { data: Promise<WhatIfData> }) {
         </button>
       </div>
 
+      {picking && (
+        <ItemPicker
+          menu={menu}
+          selectedId={item.id}
+          onPick={pick}
+          onClose={() => setPicking(false)}
+        />
+      )}
+
       {showHow && (
-        <WhatIfStory item={item} result={changed ? next : now} onClose={() => setShowHow(false)} />
+        <WhatIfStory item={item} now={now} next={next} onClose={() => setShowHow(false)} />
       )}
     </div>
   );
