@@ -5,7 +5,7 @@ import { use, useState } from "react";
 import { WhatIfSlider } from "@/components/money/WhatIfSlider";
 import { SpeakButton } from "@/components/voice/SpeakButton";
 import { imageUrl } from "@/lib/integrations/cloudinary";
-import { formatCents } from "@/lib/money";
+import { formatCents, formatDollars } from "@/lib/money";
 import type { MenuItem } from "@/lib/types";
 import { PRICE_STEP_CENTS, compare, outcome, priceRange, type Outcome } from "@/lib/whatif";
 import type { WhatIfData } from "@/lib/whatif-data";
@@ -54,9 +54,9 @@ export function WhatIfScreen({ data }: { data: Promise<WhatIfData> }) {
   const fullJar = Math.max(now.keepPerDayCents, next.keepPerDayCents, 1) / 0.9;
 
   const say = changed
-    ? `${VERDICT[verdict].text}. Now you keep ${formatCents(now.keepPerDayCents)} a day. ` +
-      `At ${formatCents(priceCents)}, you keep ${formatCents(next.keepPerDayCents)} a day.`
-    : `Now you keep ${formatCents(now.keepPerDayCents)} a day from ${item.name}.`;
+    ? `${VERDICT[verdict].text}. Now you keep ${formatDollars(now.keepPerDayCents)} a day. ` +
+      `At ${formatCents(priceCents)}, you keep ${formatDollars(next.keepPerDayCents)} a day.`
+    : `Now you keep ${formatDollars(now.keepPerDayCents)} a day from ${item.name}.`;
 
   const tryIt = (
     <div className="flex flex-col gap-6 lg:grid lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,30rem)]">
@@ -247,9 +247,7 @@ function JarColumn({
         className={`flex h-20 w-full flex-col items-center justify-center rounded-xl motion-safe:transition-colors motion-safe:duration-300 ${loses ? "bg-blush/70" : "bg-transparent"}`}
       >
         <span className="text-lg">{loses ? "You lose" : "You keep"}</span>
-        <span className="text-3xl font-bold tabular-nums">
-          {formatCents(Math.abs(Math.round(shown)))}
-        </span>
+        <span className="text-3xl font-bold tabular-nums">{formatDollars(Math.abs(shown))}</span>
       </span>
     </div>
   );

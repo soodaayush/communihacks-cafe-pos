@@ -8,9 +8,11 @@ import { formatCents } from "@/lib/money";
 import type { MenuItem } from "@/lib/types";
 import { makeScenario, reasons, type Scenario } from "@/lib/whatif-game";
 import { FitToBox } from "./FitToBox";
-import { Jar, MiniJar, PeopleChange, Person, SaleBar } from "./pictures";
+import { MiniJar, SaleBar } from "./pictures";
 
-const QUESTIONS = 4;
+// Two ideas this cashier can learn by practising: part of each sale is yours, and a higher
+// price means more for you from each one. (Customers leaving is a staff topic: Try a price.)
+const QUESTIONS = 2;
 
 /** Same sequence on the server and in the browser, so the first round matches on both. */
 function seeded(seed: number) {
@@ -202,94 +204,6 @@ export function GuessGame({
           </div>
         ),
     },
-    {
-      ask: `At ${formatCents(s.next.priceCents)}, will more people buy it, or fewer?`,
-      correct: s.up ? "fewer" : "more",
-      reason: why.people,
-      choices: (done) =>
-        done ? (
-          <div className={`flex flex-col items-center gap-3 ${fadeIn}`}>
-            <PeopleChange from={s.now.soldPerDay} to={s.next.soldPerDay} />
-            <p className="text-2xl font-bold tabular-nums">
-              {s.now.soldPerDay} → {s.next.soldPerDay} people a day
-            </p>
-          </div>
-        ) : (
-          <div className="flex h-40 w-full gap-4">
-            <button
-              type="button"
-              onClick={pick("more", s.up ? "fewer" : "more")}
-              className={choiceBtn}
-            >
-              <span aria-hidden className="flex">
-                <Person className="size-10" />
-                <Person className="size-10" />
-                <Person className="size-10" color="text-[#6f9f7c]" />
-              </span>
-              More people
-            </button>
-            <button
-              type="button"
-              onClick={pick("fewer", s.up ? "fewer" : "more")}
-              className={choiceBtn}
-            >
-              <span aria-hidden className="flex">
-                <Person className="size-10" />
-                <Person className="size-10" color="text-ink/20" />
-                <Person className="size-10" color="text-ink/20" />
-              </span>
-              Fewer people
-            </button>
-          </div>
-        ),
-    },
-    {
-      ask: "So which jar gets more money each day?",
-      correct: s.winner,
-      reason: why.jar,
-      choices: (done) => {
-        const full = Math.max(s.now.keepPerDayCents, s.next.keepPerDayCents) / 0.9;
-        return (
-          <div className="flex w-full flex-col items-center gap-2">
-            <div className="flex justify-center gap-6 sm:gap-10">
-              {(
-                [
-                  ["now", `Before ${formatCents(s.now.priceCents)}`, s.now],
-                  ["next", `Now ${formatCents(s.next.priceCents)}`, s.next],
-                ] as const
-              ).map(([id, label, r]) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={pick(id, s.winner)}
-                  disabled={done}
-                  aria-label={`${label} jar`}
-                  className={`relative flex flex-col items-center gap-1 rounded-tile bg-white p-3 ring-1 ring-ink/10 motion-safe:transition-[box-shadow,opacity] motion-safe:duration-300 ${ring(id, s.winner)}`}
-                >
-                  <span className="text-lg font-bold tabular-nums">{label}</span>
-                  {/* Empty jars with a "?" until they answer; then they fill, one stripe per person. */}
-                  <span key={done ? "full" : "empty"} className="relative">
-                    <Jar
-                      fill={done ? r.keepPerDayCents / full : 0}
-                      layers={done ? Math.min(r.soldPerDay, 40) : undefined}
-                    />
-                    {!done && (
-                      <span className="absolute inset-0 flex items-center justify-center pt-4 text-5xl font-bold text-ink/30">
-                        ?
-                      </span>
-                    )}
-                  </span>
-                  <span className="h-8 text-2xl font-bold tabular-nums">
-                    {done ? formatCents(r.keepPerDayCents) : ""}
-                  </span>
-                </button>
-              ))}
-            </div>
-            <p className="h-6 text-base text-ink-soft">{done ? "1 stripe = 1 person" : ""}</p>
-          </div>
-        );
-      },
-    },
   ];
 
   if (done) {
@@ -305,7 +219,7 @@ export function GuessGame({
         <p className="text-3xl font-bold">
           {right === QUESTIONS ? "All right!" : `${right} of ${QUESTIONS} right`}
         </p>
-        <p className="text-xl text-ink-soft">The lesson: {why.jar}</p>
+        <p className="text-xl text-ink-soft">The lesson: {why.each}</p>
         <button
           type="button"
           onClick={newRound}

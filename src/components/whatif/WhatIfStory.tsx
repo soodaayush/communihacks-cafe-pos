@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { SpeakButton } from "@/components/voice/SpeakButton";
 import { imageUrl } from "@/lib/integrations/cloudinary";
-import { formatCents } from "@/lib/money";
+import { formatCents, formatDollars } from "@/lib/money";
 import type { MenuItem } from "@/lib/types";
 import type { Outcome } from "@/lib/whatif";
 import { compare as compareOutcomes } from "@/lib/whatif";
@@ -29,7 +29,7 @@ function basicSteps(item: MenuItem, r: Outcome): Step[] {
   const price = formatCents(r.priceCents);
   const cost = formatCents(item.costCents);
   const keep = formatCents(Math.abs(r.keepEachCents));
-  const day = formatCents(Math.abs(r.keepPerDayCents));
+  const day = formatDollars(Math.abs(r.keepPerDayCents));
   const scale = Math.max(r.priceCents, item.costCents);
   const name = item.name.toLowerCase();
   const faces = Math.min(r.soldPerDay, MAX_FACES);
@@ -153,7 +153,10 @@ function compareSteps(item: MenuItem, now: Outcome, next: Outcome): Step[] {
   const newPrice = formatCents(next.priceCents);
   const scale = Math.max(now.priceCents, next.priceCents, item.costCents);
   const loses = next.keepEachCents < 0;
+  // Per-day totals in whole dollars (like the Money screen); per-sale amounts keep their cents.
   const money = (cents: number) => (cents < 0 ? `lose ${formatCents(-cents)}` : formatCents(cents));
+  const moneyDay = (cents: number) =>
+    cents < 0 ? `lose ${formatDollars(-cents)}` : formatDollars(cents);
 
   const row = (label: string, r: Outcome, dim = false) => (
     <span
@@ -176,7 +179,7 @@ function compareSteps(item: MenuItem, now: Outcome, next: Outcome): Step[] {
         fill={r.keepPerDayCents > 0 ? r.keepPerDayCents / full : 0}
         layers={r.keepPerDayCents > 0 ? Math.min(r.soldPerDay, 40) : 0}
       />
-      <span className="text-2xl font-bold tabular-nums">{money(r.keepPerDayCents)}</span>
+      <span className="text-2xl font-bold tabular-nums">{moneyDay(r.keepPerDayCents)}</span>
     </span>
   );
 
@@ -231,7 +234,7 @@ function compareSteps(item: MenuItem, now: Outcome, next: Outcome): Step[] {
             : verdict === "less"
               ? "So your jar gets less money"
               : "Your jar stays about the same",
-      big: `${money(now.keepPerDayCents)} → ${money(next.keepPerDayCents)}`,
+      big: `${moneyDay(now.keepPerDayCents)} → ${moneyDay(next.keepPerDayCents)}`,
     },
   ];
 }
