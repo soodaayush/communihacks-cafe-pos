@@ -163,3 +163,102 @@ export async function getKeptByDay(days: number): Promise<DayKept[]> {
     [start.toISOString(), end.toISOString()],
   );
 }
+
+// ---------------------------------------------------------------------------------------------
+// Expense tracking: what the café bought (ingredients, supplies, ready-made stock) vs what
+// customers paid. CONTRACT shared by the Money screen and /api/supplies/buy. Bodies: TODO.
+
+/** One UTC day: what customers paid, and what the café spent buying stock. */
+export interface DayFlow {
+  date: string; // YYYY-MM-DD
+  inCents: number;
+  boughtCents: number;
+}
+
+/** One thing bought in the period, summed: e.g. Coffee beans, 3 bags, $54. */
+export interface BoughtLine {
+  name: string;
+  kind: "supply" | "menu"; // supply = inventory_items (beans, cups...), menu = ready-made items
+  qty: number;
+  unit: string; // plain counting word: "bags", "cartons", "units"
+  costCents: number;
+}
+
+// Without a database: realistic fake purchases, so the screen works in development.
+const MOCK_BOUGHT: BoughtLine[] = [
+  { name: "Coffee beans", kind: "supply", qty: 2, unit: "bags", costCents: 3600 },
+  { name: "Milk", kind: "supply", qty: 6, unit: "cartons", costCents: 900 },
+  { name: "Paper cups", kind: "supply", qty: 100, unit: "units", costCents: 800 },
+];
+
+/** Last `days` UTC days, newest first, zeros for quiet days. */
+export async function getFlowByDay(days: number): Promise<DayFlow[]> {
+  const [start, end] = window(days, 0);
+  if (!hasDb()) {
+    const kept = await getKeptByDay(days);
+    const spent = MOCK_BOUGHT.reduce((sum, l) => sum + l.costCents, 0);
+    // Stock is bought on two of the days: today and three days ago.
+    return kept.map((d, i) => ({
+      date: d.date,
+      inCents: d.inCents,
+      boughtCents: i === 0 ? spent : i === 3 ? 2400 : 0,
+    }));
+  }
+  return query<DayFlow>(
+    `WITH days AS (
+       SELECT d::date AS day
+         FROM generate_series(($1::timestamptz AT TIME ZONE 'UTC')::date,
+                              ($2::timestamptz AT TIME ZONE 'UTC')::date - 1,
+                              interval '1 day') AS d
+     ),
+     sold AS (
+       SELECT (day AT TIME ZONE 'UTC')::date AS day, sum(revenue_cents)::int AS in_cents
+         FROM item_daily
+        WHERE day >= $1::timestamptz AND day < $2::timestamptz
+        GROUP BY 1
+     ),
+     bought AS (
+       SELECT day, sum(cents)::int AS cents
+         FROM (
+           SELECT (m.created_at AT TIME ZONE 'UTC')::date AS day,
+                  m.change_qty * i.unit_cost_cents        AS cents
+             FROM stock_movements m
+             JOIN inventory_items i ON i.id = m.inventory_item_id
+            WHERE m.reason = 'purchase'
+              AND m.created_at >= $1::timestamptz AND m.created_at < $2::timestamptz
+         ) x
+        GROUP BY 1
+     )
+     SELECT to_char(days.day, 'YYYY-MM-DD')        AS date,
+            coalesce(sold.in_cents, 0)::int        AS "inCents",
+            coalesce(bought.cents, 0)::int         AS "boughtCents"
+       FROM days
+       LEFT JOIN sold   USING (day)
+       LEFT JOIN bought USING (day)
+      ORDER BY days.day DESC`,
+    [start.toISOString(), end.toISOString()],
+  );
+}
+
+/** Everything bought in the last `days` UTC days, grouped by item, biggest cost first. */
+export async function getBought(days: number): Promise<BoughtLine[]> {
+  const [start, end] = window(days, 0);
+  if (!hasDb()) return MOCK_BOUGHT;
+  return query<BoughtLine>(
+    `SELECT name, kind, qty, unit, cost_cents AS "costCents"
+       FROM (
+         SELECT i.name,
+                'supply'                                      AS kind,
+                round(sum(m.change_qty))::int                 AS qty,
+                i.unit,
+                round(sum(m.change_qty * i.unit_cost_cents))::int AS cost_cents
+           FROM stock_movements m
+           JOIN inventory_items i ON i.id = m.inventory_item_id
+          WHERE m.reason = 'purchase'
+            AND m.created_at >= $1::timestamptz AND m.created_at < $2::timestamptz
+          GROUP BY i.name, i.unit
+       ) b
+      ORDER BY cost_cents DESC, name`,
+    [start.toISOString(), end.toISOString()],
+  );
+}
