@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { BuyResult } from "@/app/api/supplies/buy/route";
 import { Icon } from "@/components/icons/Icon";
 import { pictureFor } from "@/components/icons/supplyPicture";
+import { SpeakButton } from "@/components/voice/SpeakButton";
 import { formatCents, formatDollars } from "@/lib/money";
 import type { BoughtLine } from "@/lib/money-data";
 import { formatAmount, unitOf } from "@/lib/units";
@@ -28,9 +29,18 @@ export function BoughtList({ label, lines }: { label: string; lines: BoughtLine[
     return () => clearTimeout(t);
   }, [saved]);
 
+  const speechSummary =
+    lines.length === 0
+      ? `Nothing bought ${label.toLowerCase()}.`
+      : `What we bought ${label.toLowerCase()}: ` +
+        lines.map((l) => `${Math.round(l.qty)} ${unitOf(l.qty, l.unit)} of ${l.name} for ${money(l.costCents)}`).join(". ");
+
   return (
     <section className="flex flex-col gap-3 rounded-tile bg-white p-5 ring-1 ring-ink/10">
-      <h2 className="text-2xl font-bold">What we bought {label.toLowerCase()}</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">What we bought {label.toLowerCase()}</h2>
+        <SpeakButton text={speechSummary} size="md" label={`Read what we bought ${label.toLowerCase()}`} />
+      </div>
       <ul className="flex h-56 flex-col gap-2 overflow-y-auto pr-1">
         {lines.length === 0 ? (
           <li className="m-auto text-lg text-ink-soft">Nothing bought yet</li>
@@ -48,6 +58,11 @@ export function BoughtList({ label, lines }: { label: string; lines: BoughtLine[
               <span className="w-20 text-right text-xl font-bold tabular-nums">
                 {money(l.costCents)}
               </span>
+              <SpeakButton
+                text={`${Math.round(l.qty)} ${unitOf(l.qty, l.unit)} of ${l.name}, ${money(l.costCents)}`}
+                size="sm"
+                label={`Read ${l.name}`}
+              />
             </li>
           ))
         )}

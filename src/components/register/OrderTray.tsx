@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { SpeakButton } from "@/components/voice/SpeakButton";
 import { imageUrl } from "@/lib/integrations/cloudinary";
 import { formatCents } from "@/lib/money";
 import { sizeLabel } from "@/lib/sizes";
@@ -29,10 +30,19 @@ export function OrderTray({
   onPay,
 }: OrderTrayProps) {
   const byId = new Map(menu.map((m) => [m.id, m]));
+
+  const orderSpeechSummary =
+    items.length === 0
+      ? "Order tray is empty. Tap pictures to add items."
+      : `Order has ${items.reduce((acc, i) => acc + i.qty, 0)} items. Total is ${formatCents(totalCents)}.`;
+
   return (
     <aside className="flex min-h-[28rem] flex-col rounded-tile bg-white ring-1 ring-ink/10 lg:h-full">
       <header className="flex items-center justify-between px-5 pt-4 pb-2">
-        <h2 className="text-2xl font-bold">Order</h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-2xl font-bold">Order</h2>
+          <SpeakButton text={orderSpeechSummary} size="sm" label="Read order summary" />
+        </div>
         {items.length > 0 && (
           <button
             type="button"
@@ -82,6 +92,7 @@ export function OrderTray({
               .reduce((s, l) => s + l.qty, 0);
             const atMax = inOrder >= item.stock;
             const name = line.size ? `${item.name} (${sizeLabel(line.size)})` : item.name;
+            const lineSpoken = `${line.qty} ${name}, ${formatCents(line.unitPriceCents * line.qty)}`;
             return (
               <li
                 key={`${line.menuItemId}|${line.size ?? ""}`}
@@ -96,7 +107,15 @@ export function OrderTray({
                   className="size-12"
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-lg font-semibold">{name}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="truncate text-lg font-semibold">{name}</p>
+                    <SpeakButton
+                      text={lineSpoken}
+                      size="sm"
+                      label={`Read ${name}`}
+                      className="size-7"
+                    />
+                  </div>
                   <p className="text-base text-ink-soft tabular-nums">
                     {line.qty} × {formatCents(line.unitPriceCents)}
                   </p>
@@ -134,7 +153,14 @@ export function OrderTray({
 
       <footer className="border-t border-ink/10 px-5 pt-4 pb-5">
         <div className="mb-4 flex items-baseline justify-between" aria-live="polite">
-          <span className="text-2xl font-semibold">Total</span>
+          <div className="flex items-center gap-2">
+            <span className="text-2xl font-semibold">Total</span>
+            <SpeakButton
+              text={`Total is ${formatCents(totalCents)}`}
+              size="sm"
+              label="Read total"
+            />
+          </div>
           <span className="text-number font-bold tabular-nums">{formatCents(totalCents)}</span>
         </div>
         <button

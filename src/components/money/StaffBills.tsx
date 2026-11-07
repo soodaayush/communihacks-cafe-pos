@@ -1,3 +1,4 @@
+import { SpeakButton } from "@/components/voice/SpeakButton";
 import { formatCents } from "@/lib/money";
 import type { Expense, ExpenseType } from "@/lib/types";
 
@@ -17,10 +18,18 @@ export function StaffBills({ label, expenses }: { label: string; expenses: Expen
   for (const e of expenses) byType.set(e.type, (byType.get(e.type) ?? 0) + e.amountCents);
   const total = [...byType.values()].reduce((a, b) => a + b, 0);
 
+  const speechText =
+    byType.size === 0
+      ? `No bills paid ${label.toLowerCase()}.`
+      : `Bills paid ${label.toLowerCase()}: ` +
+        [...byType].map(([type, cents]) => `${BILL[type]}: ${formatCents(cents)}`).join(". ") +
+        `. Total bills: ${formatCents(total)}.`;
+
   return (
     <details className="rounded-tile bg-white/60 px-5 py-3 ring-1 ring-ink/10">
-      <summary className="flex min-h-12 cursor-pointer items-center text-lg font-semibold text-ink-soft">
-        For staff: bills paid {label.toLowerCase()}
+      <summary className="flex min-h-12 cursor-pointer items-center justify-between text-lg font-semibold text-ink-soft">
+        <span>For staff: bills paid {label.toLowerCase()}</span>
+        <SpeakButton text={speechText} size="sm" label="Read staff bills" />
       </summary>
       {byType.size === 0 ? (
         <p className="pb-2 text-lg">No bills paid.</p>

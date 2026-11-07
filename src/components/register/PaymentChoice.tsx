@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { SpeakButton } from "@/components/voice/SpeakButton";
 import { DENOMS, breakdown, roundCash, type Denom } from "@/lib/cash";
 import { formatCents } from "@/lib/money";
 import type { PaymentMethod, SaleItem } from "@/lib/types";
@@ -148,12 +149,21 @@ export function PaymentChoice({ items, totalCents, onPaid, onClose }: PaymentCho
   const [method, setMethod] = useState<PaymentMethod>("cash");
   const [saving, setSaving] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [givenBack, setGivenBack] = useState<number[]>([]);
+  const [prevGot, setPrevGot] = useState<number>(0);
 
   useEffect(() => ref.current?.showModal(), []);
 
   const due = roundCash(totalCents);
   const got = given.reduce((sum, d) => sum + d, 0);
   const change = got - due;
+  const changePieces = change > 0 ? breakdown(change) : [];
+
+  // Reset handed back state whenever the given cash amount changes
+  if (got !== prevGot) {
+    setPrevGot(got);
+    setGivenBack([]);
+  }
 
   // The total written as a sum. Small amounts repeat (2 coffees = $2.00 + $2.00) so nobody has to multiply.
   const terms = items.flatMap((l) =>
@@ -219,13 +229,20 @@ export function PaymentChoice({ items, totalCents, onPaid, onClose }: PaymentCho
               <span aria-hidden>←</span> Back
             </button>
           )}
-          <div className="text-center">
-            <p className="text-2xl font-semibold">
-              Total{" "}
-              <span className="ml-2 text-number font-bold tabular-nums">
-                {formatCents(step === "cash" ? due : totalCents)}
-              </span>
-            </p>
+          <div className="flex flex-col items-center">
+            <div className="flex items-center gap-2">
+              <p className="text-2xl font-semibold">
+                Total{" "}
+                <span className="ml-2 text-number font-bold tabular-nums">
+                  {formatCents(step === "cash" ? due : totalCents)}
+                </span>
+              </p>
+              <SpeakButton
+                text={`Total is ${formatCents(step === "cash" ? due : totalCents)}`}
+                size="sm"
+                label="Read total amount"
+              />
+            </div>
             {terms.length > 1 && (
               <p className="text-base text-ink-soft tabular-nums">
                 {terms.join(" + ")} = {formatCents(totalCents)}
@@ -245,33 +262,50 @@ export function PaymentChoice({ items, totalCents, onPaid, onClose }: PaymentCho
       )}
 
       {step === "choose" && (
-        <div className="grid gap-5 sm:grid-cols-2">
-          <button
-            type="button"
-            onClick={() => setStep("cash")}
-            className="flex flex-col items-center gap-5 rounded-tile bg-white py-10 ring-1 ring-ink/10 transition-transform motion-safe:active:scale-[0.98]"
-          >
-            <span className="flex items-center gap-3">
-              <MoneyPiece cents={2000} />
-              <MoneyPiece cents={100} />
-            </span>
-            <span className="text-3xl font-bold">Cash</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setStep("card")}
-            className="flex flex-col items-center gap-5 rounded-tile bg-white py-10 ring-1 ring-ink/10 transition-transform motion-safe:active:scale-[0.98]"
-          >
-            <CardPicture className="h-16" />
-            <span className="text-3xl font-bold">Card</span>
-          </button>
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between rounded-2xl bg-white px-5 py-3 ring-1 ring-ink/10">
+            <p className="text-xl font-semibold">How is the customer paying?</p>
+            <SpeakButton
+              text="How is the customer paying? Choose cash or card."
+              size="sm"
+              label="Read payment choice instructions"
+            />
+          </div>
+          <div className="grid gap-5 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => setStep("cash")}
+              className="flex flex-col items-center gap-5 rounded-tile bg-white py-10 ring-1 ring-ink/10 transition-transform motion-safe:active:scale-[0.98]"
+            >
+              <span className="flex items-center gap-3">
+                <MoneyPiece cents={2000} />
+                <MoneyPiece cents={100} />
+              </span>
+              <span className="text-3xl font-bold">Cash</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setStep("card")}
+              className="flex flex-col items-center gap-5 rounded-tile bg-white py-10 ring-1 ring-ink/10 transition-transform motion-safe:active:scale-[0.98]"
+            >
+              <CardPicture className="h-16" />
+              <span className="text-3xl font-bold">Card</span>
+            </button>
+          </div>
         </div>
       )}
 
       {step === "cash" && (
         <div className="grid gap-6 md:grid-cols-[1fr_20rem]">
           <section aria-label="Money they gave you">
-            <p className="mb-4 text-xl text-ink-soft">Tap what they give you</p>
+            <div className="mb-4 flex items-center justify-between">
+              <p className="text-xl text-ink-soft">Tap what they give you</p>
+              <SpeakButton
+                text={`Total due is ${formatCents(due)}. Tap the bills and coins the customer hands you.`}
+                size="sm"
+                label="Read cash instructions"
+              />
+            </div>
             <div className="grid grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] gap-3">
               {DENOMS.map((d) => {
                 const count = given.filter((g) => g === d).length;
@@ -350,30 +384,87 @@ export function PaymentChoice({ items, totalCents, onPaid, onClose }: PaymentCho
               )}
             </div>
             {got > 0 && change < 0 && (
-              <p className="rounded-2xl bg-butter/60 p-4 text-xl">
-                Need <strong className="tabular-nums">{formatCents(-change)}</strong> more
-              </p>
+              <div className="flex items-center justify-between rounded-2xl bg-butter/60 p-4">
+                <p className="text-xl">
+                  Need <strong className="tabular-nums">{formatCents(-change)}</strong> more
+                </p>
+                <SpeakButton
+                  text={`Need ${formatCents(-change)} more.`}
+                  size="sm"
+                  label="Read amount still needed"
+                />
+              </div>
             )}
             {got > 0 && change >= 0 && (
               <div className="rounded-2xl bg-sage/50 p-4">
                 <div className="flex items-baseline justify-between">
-                  <span className="text-xl font-semibold">Give back</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl font-semibold">Give back</span>
+                    <SpeakButton
+                      text={
+                        change === 0
+                          ? "Exact change received. No money to give back."
+                          : `Give back ${formatCents(change)} in change. Tap each coin or bill as you hand it to the customer.`
+                      }
+                      size="sm"
+                      label="Read change to give back"
+                    />
+                  </div>
                   <span className="text-number font-bold tabular-nums">{formatCents(change)}</span>
                 </div>
                 {/* Brief math: what they gave, take away the total. */}
                 <p className="mt-1 text-right text-base tabular-nums">
                   {formatCents(got)} − {formatCents(due)} = {formatCents(change)}
                 </p>
+
+                {change > 0 && (
+                  <p className="mt-2 text-sm font-medium text-ink-soft">
+                    Tap each piece as you hand it over:
+                  </p>
+                )}
+
                 <div
-                  className="mt-3 flex flex-wrap items-center gap-2"
-                  aria-label={breakdown(change).map(denomLabel).join(", ") || "No change"}
+                  className="mt-2 flex flex-wrap items-center gap-2"
+                  aria-label={changePieces.map(denomLabel).join(", ") || "No change"}
                 >
                   {change === 0 ? (
-                    <span className="text-xl">No change</span>
+                    <span className="text-xl font-medium">No change</span>
                   ) : (
-                    breakdown(change).map((d, i) => <MoneyPiece key={i} cents={d} />)
+                    changePieces.map((d, i) => {
+                      const isDone = givenBack.includes(i);
+                      return (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => {
+                            setGivenBack((prev) =>
+                              prev.includes(i) ? prev.filter((idx) => idx !== i) : [...prev, i],
+                            );
+                          }}
+                          aria-label={`${denomLabel(d)} ${isDone ? "handed over" : "to hand over"}`}
+                          className={`relative rounded-xl transition-all motion-safe:active:scale-95 ${
+                            isDone
+                              ? "opacity-40 line-through ring-2 ring-sage"
+                              : "hover:ring-2 hover:ring-ink/20"
+                          }`}
+                        >
+                          <MoneyPiece cents={d} />
+                          {isDone && (
+                            <span className="absolute -top-1.5 -right-1.5 flex size-6 items-center justify-center rounded-full bg-sage text-ink shadow">
+                              <Check className="size-4" />
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })
                   )}
                 </div>
+
+                {change > 0 && givenBack.length === changePieces.length && (
+                  <p className="mt-3 flex items-center gap-1.5 text-base font-bold text-sage-dark">
+                    <Check className="size-5" /> All change handed over!
+                  </p>
+                )}
               </div>
             )}
             {failed && (
@@ -398,7 +489,14 @@ export function PaymentChoice({ items, totalCents, onPaid, onClose }: PaymentCho
           </div>
 
           <div className="flex flex-col gap-5">
-            <p className="text-2xl font-semibold">Turn the machine to the customer</p>
+            <div className="flex items-center justify-between">
+              <p className="text-2xl font-semibold">Turn the machine to the customer</p>
+              <SpeakButton
+                text="Turn the card machine to the customer so they can tap their card."
+                size="sm"
+                label="Read card machine instructions"
+              />
+            </div>
             <ol className="flex flex-col gap-3" aria-live="polite">
               {CARD_STEPS.map((s, i) => {
                 const done = i < cardIndex || cardStatus === "approved";
@@ -441,7 +539,14 @@ export function PaymentChoice({ items, totalCents, onPaid, onClose }: PaymentCho
           <span className="flex size-20 items-center justify-center rounded-full bg-sage">
             <Check className="size-10" />
           </span>
-          <h2 className="text-3xl font-bold">Sale done</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-3xl font-bold">Sale done</h2>
+            <SpeakButton
+              text={`Sale done! Customer paid ${formatCents(method === "cash" ? got : totalCents)}, got back ${formatCents(method === "cash" ? change : 0)}, and the café keeps ${formatCents(method === "cash" ? due : totalCents)}.`}
+              size="md"
+              label="Read sale completion summary"
+            />
+          </div>
 
           {/* Receipt-style summary: what came in, what went back, what the café keeps. */}
           <dl className="grid w-full max-w-xl grid-cols-[1fr_auto] gap-x-4 gap-y-3 rounded-tile bg-white p-6 text-left text-xl ring-1 ring-ink/10">

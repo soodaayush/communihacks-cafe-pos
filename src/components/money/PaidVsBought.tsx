@@ -1,4 +1,5 @@
 import { Icon } from "@/components/icons/Icon";
+import { SpeakButton } from "@/components/voice/SpeakButton";
 import { formatDollars } from "@/lib/money";
 import type { DayFlow } from "@/lib/money-data";
 import { Person } from "./pictures";
@@ -14,10 +15,14 @@ export function PaidVsBought({ days }: { days: DayFlow[] }) {
   const today = ordered[ordered.length - 1]?.date;
   const pct = (c: number) => `${(Math.max(c, 0) / max) * 100}%`;
 
+  const speechSummary = `Daily comparison for the last ${ordered.length} days. Green shows money customers paid. Pink shows money spent buying stock. ` +
+    ordered.map((d) => `${d.date === today ? "Today" : WEEKDAY[weekday(d.date)]}: paid ${formatDollars(d.inCents)}, bought ${formatDollars(d.boughtCents)}.`).join(" ");
+
   return (
     <section className="flex flex-col gap-3 rounded-tile bg-white p-5 ring-1 ring-ink/10">
-      <div className="flex min-h-16 items-center">
+      <div className="flex min-h-16 items-center justify-between">
         <h2 className="text-2xl font-bold">Each day</h2>
+        <SpeakButton text={speechSummary} size="md" label="Read daily comparison" />
       </div>
       <div className="flex min-h-44 flex-1 items-end gap-3" aria-hidden>
         {ordered.length === 0 ? (

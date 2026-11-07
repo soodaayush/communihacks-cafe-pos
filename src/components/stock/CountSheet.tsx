@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/icons/Icon";
+import { SpeakButton } from "@/components/voice/SpeakButton";
 
 export interface CountSheetProps {
   name: string;
@@ -75,14 +76,21 @@ export function CountSheet({
       className="m-auto w-[min(32rem,calc(100vw-2rem))] rounded-tile bg-white p-6 text-ink shadow-xl backdrop:bg-ink/40"
     >
       <div className="flex flex-col gap-5">
-        <div className="flex items-center gap-3">
-          <span className="flex size-14 items-center justify-center text-5xl">{picture}</span>
-          <div>
-            <h2 id="count-title" className="text-2xl font-bold">
-              {name}
-            </h2>
-            <p className="text-lg text-ink-soft">{question}</p>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="flex size-14 items-center justify-center text-5xl">{picture}</span>
+            <div>
+              <h2 id="count-title" className="text-2xl font-bold">
+                {name}
+              </h2>
+              <p className="text-lg text-ink-soft">{question}</p>
+            </div>
           </div>
+          <SpeakButton
+            text={`Counting ${name}. ${question}. Current count is ${count} ${unit}.`}
+            size="md"
+            label="Read count instructions"
+          />
         </div>
 
         <div className="flex items-center justify-between gap-3">

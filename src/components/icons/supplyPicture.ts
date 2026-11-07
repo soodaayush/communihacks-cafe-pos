@@ -8,13 +8,11 @@ const PICTURE: Record<string, IconName> = {
   Milk: "milk",
   Lemonade: "lemonade",
   Oranges: "oranges",
-  Flour: "flour",
   Sugar: "sugar",
   Eggs: "eggs",
   Bread: "bread",
   "Paper cups": "cups",
   "Cup lids": "lids",
-  Napkins: "napkins",
 };
 
 export const pictureFor = (name: string): IconName => PICTURE[name] ?? "crate";

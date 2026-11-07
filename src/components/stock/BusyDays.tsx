@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons/Icon";
 import { BarChart } from "@/components/stock/BarChart";
+import { SpeakButton } from "@/components/voice/SpeakButton";
 import type { DaySummary } from "@/lib/types";
 
 // "Busy days": average money in for each day of the week over the last month
@@ -47,10 +48,19 @@ export function BusyDays() {
       aria-labelledby="busy-days"
       className="flex flex-col rounded-tile bg-white p-5 ring-1 ring-ink/10 lg:flex-1 lg:p-6"
     >
-      <h2 id="busy-days" className="text-2xl font-bold">
-        Busy days
-      </h2>
-      <p className="mb-4 text-lg text-ink-soft">Money in on an average day of the week</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 id="busy-days" className="text-2xl font-bold">
+            Busy days
+          </h2>
+          <p className="mb-4 text-lg text-ink-soft">Money in on an average day of the week</p>
+        </div>
+        <SpeakButton
+          text={`Busy days: over the last month, our busiest day of the week was ${NAMES[best]} with an average of ${dollars(avg[best])} brought in.`}
+          size="md"
+          label="Read busy days"
+        />
+      </div>
       <BarChart
         label="Average money in for each day of the week"
         format={dollars}

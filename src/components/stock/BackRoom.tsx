@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons/Icon";
 import { pictureOf } from "@/components/icons/supplyPicture";
+import { CountButton } from "@/components/stock/CountButton";
 import { CountSheet } from "@/components/stock/CountSheet";
 import { StockLevel } from "@/components/stock/StockLevel";
+import { SpeakButton } from "@/components/voice/SpeakButton";
 import type { InventoryItem } from "@/lib/types";
 import { formatAmount, isMeasured, unitOf } from "@/lib/units";
 
@@ -12,7 +14,7 @@ import { formatAmount, isMeasured, unitOf } from "@/lib/units";
 //   For drinks:      what drinks are made from (beans, tea leaves, milk, lemonade, oranges). Every
 //                    drink sold takes its recipe out of here, so these show how full they are and
 //                    how much went into drinks this week.
-//   Everything else: counted things (cups, lids, flour, eggs...), same look as the shelf.
+//   Everything else: counted things (cups, lids, eggs, bread...), same look as the shelf.
 
 const getJson = <T,>(url: string): Promise<T> =>
   fetch(url).then((r) => (r.ok ? r.json() : Promise.reject(new Error(url))));
@@ -22,47 +24,51 @@ const percent = (i: InventoryItem) =>
 
 function Tile({ item, onCount }: { item: InventoryItem; onCount: () => void }) {
   const forDrinks = item.fullQty !== null;
+  const speechText = forDrinks
+    ? `${item.name}, ${percent(item)}% full. ${formatAmount(item.stock, item.unit)} left. Used ${formatAmount(item.usedLast7Days, item.unit)} this week.`
+    : `${item.name}, ${Math.round(item.stock)} ${unitOf(item.stock, item.unit)} left in the back.`;
+
   return (
     <div className="flex flex-col justify-between gap-3 rounded-tile bg-white p-4 ring-1 ring-ink/10 lg:p-5">
       <div className="flex items-center gap-3">
         <Icon name={pictureOf(item)} className="size-14 lg:size-16" />
         <p className="min-w-0 flex-1 text-xl font-semibold">{item.name}</p>
-        {forDrinks ? (
-          <p className="text-right text-3xl leading-none font-bold tabular-nums">
-            {percent(item)}%<span className="block text-base font-normal text-ink-soft">full</span>
-          </p>
-        ) : (
-          <p className="text-right">
-            <span className="block text-number leading-none font-bold tabular-nums lg:text-4xl">
-              {Math.round(item.stock)}
-            </span>
-            <span className="text-base text-ink-soft">{unitOf(item.stock, item.unit)}</span>
-          </p>
-        )}
+        <div className="flex items-center gap-2">
+          {forDrinks ? (
+            <p className="text-right text-3xl leading-none font-bold tabular-nums">
+              {percent(item)}%<span className="block text-base font-normal text-ink-soft">full</span>
+            </p>
+          ) : (
+            <p className="text-right">
+              <span className="block text-number leading-none font-bold tabular-nums lg:text-4xl">
+                {Math.round(item.stock)}
+              </span>
+              <span className="text-base text-ink-soft">{unitOf(item.stock, item.unit)}</span>
+            </p>
+          )}
+          <SpeakButton text={speechText} size="sm" label={`Read stock for ${item.name}`} />
+        </div>
       </div>
-      <StockLevel
-        stock={item.stock}
-        reorderLevel={item.reorderLevel}
-        capacity={item.fullQty ?? undefined}
-        note={forDrinks ? `${formatAmount(item.stock, item.unit)} left` : undefined}
-      />
-      {forDrinks && (
-        <p className="-mt-1 text-lg text-ink-soft">
-          Used for drinks this week:{" "}
-          <span className="font-semibold text-ink tabular-nums">
-            {formatAmount(item.usedLast7Days, item.unit)}
-          </span>
-        </p>
-      )}
-      <button
-        type="button"
-        aria-label={`Count ${item.name}`}
-        onClick={onCount}
-        className="flex min-h-12 items-center justify-center gap-2 rounded-tile bg-cream text-lg font-semibold ring-1 ring-ink/15 lg:text-xl"
-      >
-        <Icon name="pencil" className="size-6" />
-        Count
-      </button>
+      {/* The level (and, for drinks, this week's use) fills the row; the small pencil is bottom-right. */}
+      <div className="flex items-end gap-3">
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
+          <StockLevel
+            stock={item.stock}
+            reorderLevel={item.reorderLevel}
+            capacity={item.fullQty ?? undefined}
+            note={forDrinks ? `${formatAmount(item.stock, item.unit)} left` : undefined}
+          />
+          {forDrinks && (
+            <p className="text-lg text-ink-soft">
+              Used this week:{" "}
+              <span className="font-semibold text-ink tabular-nums">
+                {formatAmount(item.usedLast7Days, item.unit)}
+              </span>
+            </p>
+          )}
+        </div>
+        <CountButton name={item.name} onClick={onCount} />
+      </div>
     </div>
   );
 }
@@ -153,7 +159,15 @@ export function BackRoom() {
           picture={<Icon name={pictureOf(counting)} className="size-14" />}
           unit={isMeasured(counting.unit) ? counting.unit : unitOf(2, counting.unit)}
           current={Math.round(counting.stock)}
-          stepBy={counting.unit === "g" ? 50 : counting.unit === "ml" ? 100 : 1}
+          stepBy={
+            counting.unit === "g"
+              ? 50
+              : counting.unit === "ml"
+                ? 100
+                : counting.unit === "pouches"
+                  ? 10
+                  : 1
+          }
           describe={isMeasured(counting.unit) ? (n) => formatAmount(n, counting.unit) : undefined}
           question={isMeasured(counting.unit) ? "How much is there?" : undefined}
           onSave={(n) => saveCount(counting, n)}
