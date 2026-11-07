@@ -1,6 +1,7 @@
 // Hard-coded fake data so the front end can work before the database is wired.
 // TODO(dev1): replace each usage in src/app/api with a real query via src/lib/db.ts.
 import type {
+  BusyHour,
   DaySummary,
   InventoryItem,
   Expense,
@@ -8,6 +9,7 @@ import type {
   Purchase,
   RestockSuggestion,
   Sale,
+  StockPoint,
   SummaryRange,
   TrendPoint,
 } from "./types";
@@ -112,8 +114,19 @@ export const mockTrends: TrendPoint[] = [
 ];
 
 export const mockRestock: RestockSuggestion[] = [
-  { menuItemId: "m2", stock: 8, reorderLevel: 10, suggestedQty: 20 },
-  { menuItemId: "m4", stock: 3, reorderLevel: 8, suggestedQty: 24 },
+  { menuItemId: "m2", stock: 8, reorderLevel: 10, suggestedQty: 20, daysLeft: 2 },
+  { menuItemId: "m4", stock: 3, reorderLevel: 8, suggestedQty: 24, daysLeft: 1 },
+];
+
+export const mockBusyHours: BusyHour[] = [
+  { hour: 9, saleCount: 40, moneyInCents: 16000 },
+  { hour: 12, saleCount: 65, moneyInCents: 28000 },
+  { hour: 15, saleCount: 30, moneyInCents: 12000 },
+];
+
+export const mockStockHistory: StockPoint[] = [
+  { date: "2026-11-06", stock: 5.2 },
+  { date: "2026-11-07", stock: 4.5 },
 ];
 
 const DAYS: Record<SummaryRange, number> = { day: 1, week: 7, month: 30 };
