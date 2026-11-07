@@ -150,11 +150,29 @@ export const mockPurchase: Purchase = {
   createdAt: "2026-11-07T14:00:00.000Z",
 };
 
-export const mockExpenses: Expense[] = [
-  { id: "e1", type: "rent", amountCents: 50000, date: "2026-11-01" },
-  { id: "e2", type: "salary", amountCents: 30000, date: "2026-11-01" },
-  { id: "e3", type: "inventory", amountCents: 600, date: "2026-11-07" },
-];
+// 70 days of bills ending 2026-11-07 (back to Sept 1): rent and wages on the 1st, buying stock every 7 days,
+// and two small "other" bills a month. Enough history for the budget's carried-over balances.
+export const mockExpenses: Expense[] = Array.from({ length: 70 }, (_, daysAgo) => {
+  const d = new Date(Date.UTC(2026, 10, 7 - daysAgo));
+  const date = d.toISOString().slice(0, 10);
+  const day = d.getUTCDate();
+  const bills: Expense[] = [];
+  if (day === 1)
+    bills.push(
+      { id: `rent-${date}`, type: "rent", amountCents: 50000, date },
+      { id: `salary-${date}`, type: "salary", amountCents: 30000, date },
+    );
+  if (daysAgo % 7 === 0)
+    bills.push({
+      id: `stock-${date}`,
+      type: "inventory",
+      amountCents: 6000 + (daysAgo % 3) * 1500,
+      date,
+    });
+  if (day === 10 || day === 22)
+    bills.push({ id: `other-${date}`, type: "other", amountCents: day === 10 ? 1800 : 3500, date });
+  return bills;
+}).flat();
 
 export const mockBusyHours: BusyHour[] = [
   { hour: 9, saleCount: 40, moneyInCents: 16000 },
@@ -168,8 +186,12 @@ const dayString = (daysAgo: number) =>
   new Date(Date.UTC(2026, 10, 7 - daysAgo)).toISOString().slice(0, 10);
 
 /** Newest first. offsetDays shifts the window back (use RANGE_DAYS[range] for the previous period). */
-export function mockSummary(range: SummaryRange, offsetDays = 0): DaySummary[] {
-  return Array.from({ length: RANGE_DAYS[range] }, (_, i) => {
+export function mockSummary(
+  range: SummaryRange,
+  offsetDays = 0,
+  days = RANGE_DAYS[range],
+): DaySummary[] {
+  return Array.from({ length: days }, (_, i) => {
     const daysAgo = i + offsetDays;
     const moneyInCents = 11000 + ((daysAgo * 37) % 9) * 300 - Math.min(daysAgo, 30) * 20;
     const moneyOutCents = 7000 + ((daysAgo * 13) % 5) * 200;

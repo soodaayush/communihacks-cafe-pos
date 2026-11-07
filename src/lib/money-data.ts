@@ -89,7 +89,9 @@ export function queryBusyHours(days: number) {
 }
 
 export async function getDaySummaries(days: number, offsetDays = 0): Promise<DaySummary[]> {
-  return hasDb() ? queryDaySummaries(days, offsetDays) : mockSummary(rangeFor(days), offsetDays);
+  return hasDb()
+    ? queryDaySummaries(days, offsetDays)
+    : mockSummary(rangeFor(days), offsetDays, days);
 }
 
 export async function getBusyHours(days: number): Promise<BusyHour[]> {
