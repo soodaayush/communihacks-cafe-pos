@@ -15,6 +15,27 @@ export interface MenuItem {
   reorderLevel: number;
 }
 
+// Back-room stock (ingredients, packaging, supplies): what the cafe buys, not what it sells.
+export type InventoryCategory = "ingredient" | "packaging" | "supply";
+export type StockReason = "purchase" | "use" | "waste" | "adjustment";
+
+export interface InventoryItem {
+  id: string;
+  name: string;
+  imagePublicId: string;
+  category: InventoryCategory;
+  unit: string; // "kg", "L", "pcs" ...
+  stock: number; // in `unit`
+  reorderLevel: number;
+  unitCostCents: number;
+}
+
+export interface StockMovement {
+  inventoryItemId: string;
+  changeQty: number; // positive adds stock, negative removes it
+  reason: StockReason;
+}
+
 export interface SaleItem {
   menuItemId: string;
   qty: number;

@@ -1,7 +1,7 @@
+import { dbOrMock } from "@/lib/api";
 import { mockMenu } from "@/lib/mock-data";
-import type { MenuItem } from "@/lib/types";
+import { listMenu } from "@/lib/queries";
 
-// TODO(dev1): SELECT from menu_items.
 export function GET() {
-  return Response.json(mockMenu satisfies MenuItem[]);
+  return dbOrMock(() => mockMenu, listMenu);
 }
