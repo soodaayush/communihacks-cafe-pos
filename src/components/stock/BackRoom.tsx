@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Icon } from "@/components/icons/Icon";
 import { pictureOf } from "@/components/icons/supplyPicture";
+import { CountButton } from "@/components/stock/CountButton";
 import { CountSheet } from "@/components/stock/CountSheet";
 import { StockLevel } from "@/components/stock/StockLevel";
 import type { InventoryItem } from "@/lib/types";
@@ -40,29 +41,26 @@ function Tile({ item, onCount }: { item: InventoryItem; onCount: () => void }) {
           </p>
         )}
       </div>
-      <StockLevel
-        stock={item.stock}
-        reorderLevel={item.reorderLevel}
-        capacity={item.fullQty ?? undefined}
-        note={forDrinks ? `${formatAmount(item.stock, item.unit)} left` : undefined}
-      />
-      {forDrinks && (
-        <p className="-mt-1 text-lg text-ink-soft">
-          Used for drinks this week:{" "}
-          <span className="font-semibold text-ink tabular-nums">
-            {formatAmount(item.usedLast7Days, item.unit)}
-          </span>
-        </p>
-      )}
-      <button
-        type="button"
-        aria-label={`Count ${item.name}`}
-        onClick={onCount}
-        className="flex min-h-12 items-center justify-center gap-2 rounded-tile bg-cream text-lg font-semibold ring-1 ring-ink/15 lg:text-xl"
-      >
-        <Icon name="pencil" className="size-6" />
-        Count
-      </button>
+      {/* The level (and, for drinks, this week's use) fills the row; the small pencil is bottom-right. */}
+      <div className="flex items-end gap-3">
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
+          <StockLevel
+            stock={item.stock}
+            reorderLevel={item.reorderLevel}
+            capacity={item.fullQty ?? undefined}
+            note={forDrinks ? `${formatAmount(item.stock, item.unit)} left` : undefined}
+          />
+          {forDrinks && (
+            <p className="text-lg text-ink-soft">
+              Used this week:{" "}
+              <span className="font-semibold text-ink tabular-nums">
+                {formatAmount(item.usedLast7Days, item.unit)}
+              </span>
+            </p>
+          )}
+        </div>
+        <CountButton name={item.name} onClick={onCount} />
+      </div>
     </div>
   );
 }
