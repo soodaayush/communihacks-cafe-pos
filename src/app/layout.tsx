@@ -1,6 +1,10 @@
 import type { Metadata, Viewport } from "next";
+import { Atkinson_Hyperlegible_Next } from "next/font/google";
 import { NavBar } from "@/components/nav/NavBar";
 import "./globals.css";
+
+// Made by the Braille Institute for low-vision readers: letters that are hard to mix up.
+const font = Atkinson_Hyperlegible_Next({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "KW Habilitation Café",
@@ -17,8 +21,8 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="flex min-h-dvh flex-col">
-        <main className="flex-1 p-6">{children}</main>
+      <body className={`${font.className} flex h-dvh flex-col`}>
+        <main className="min-h-0 flex-1 overflow-y-auto p-4 lg:p-6">{children}</main>
         <NavBar />
       </body>
     </html>
