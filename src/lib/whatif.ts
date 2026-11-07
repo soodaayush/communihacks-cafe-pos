@@ -43,9 +43,12 @@ export function priceRange(item: MenuItem): { minCents: number; maxCents: number
   };
 }
 
-/** "same" when the daily difference is under 50¢ or under 2%. */
+/**
+ * "same" when the daily difference is under $1 or under 5%: small enough that the two jars look
+ * alike, so the words never disagree with the picture.
+ */
 export function compare(now: Outcome, next: Outcome): Verdict {
   const diff = next.keepPerDayCents - now.keepPerDayCents;
-  if (Math.abs(diff) < 50 || Math.abs(diff) <= Math.abs(now.keepPerDayCents) * 0.02) return "same";
+  if (Math.abs(diff) < 100 || Math.abs(diff) <= Math.abs(now.keepPerDayCents) * 0.05) return "same";
   return diff > 0 ? "more" : "less";
 }
