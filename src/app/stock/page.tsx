@@ -123,14 +123,15 @@ export default function StockPage() {
 
       {view === "shelf" && (
         <div className="lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pr-1">
+          {/* On big screens the tiles share the whole height (never shorter than 13rem). */}
           <section
             aria-label="Shelf"
-            className="grid auto-rows-max gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4"
+            className="grid gap-4 sm:grid-cols-2 lg:h-full lg:auto-rows-[minmax(14.5rem,1fr)] lg:grid-cols-4"
           >
             {menu.map((item) => (
               <div
                 key={item.id}
-                className="flex flex-col gap-3 rounded-tile bg-white p-4 ring-1 ring-ink/10"
+                className="flex flex-col justify-between gap-3 rounded-tile bg-white p-4 ring-1 ring-ink/10 lg:p-5 2xl:p-6"
               >
                 <div className="flex items-center gap-3">
                   <Image
@@ -139,14 +140,16 @@ export default function StockPage() {
                     width={56}
                     height={56}
                     unoptimized
-                    className="size-14"
+                    className="size-14 lg:size-16 2xl:size-20"
                   />
-                  <p className="flex-1 text-xl font-semibold">{item.name}</p>
+                  <p className="min-w-0 flex-1 text-xl font-semibold lg:text-xl 2xl:text-2xl">
+                    {item.name}
+                  </p>
                   <p className="text-right">
-                    <span className="block text-number leading-none font-bold tabular-nums">
+                    <span className="block text-number leading-none font-bold tabular-nums lg:text-4xl 2xl:text-[3.25rem]">
                       {item.stock}
                     </span>
-                    <span className="text-base text-ink-soft">left</span>
+                    <span className="text-base text-ink-soft lg:text-lg">left</span>
                   </p>
                 </div>
                 <StockLevel
@@ -159,7 +162,7 @@ export default function StockPage() {
                   type="button"
                   aria-label={`Count ${item.name}`}
                   onClick={() => setCounting(item)}
-                  className="min-h-12 rounded-tile bg-cream text-lg font-semibold ring-1 ring-ink/15"
+                  className="min-h-12 rounded-tile bg-cream text-lg font-semibold ring-1 ring-ink/15 lg:min-h-12 lg:text-xl 2xl:min-h-16"
                 >
                   ✏️ Count
                 </button>
@@ -188,11 +191,7 @@ export default function StockPage() {
           onClose={() => setCounting(null)}
         />
       )}
-      {view === "back" && (
-        <div className="w-full max-w-4xl">
-          <BackRoom />
-        </div>
-      )}
+      {view === "back" && <BackRoom />}
       {view === "trends" && <Trends menu={menu} trends={trends} />}
     </div>
   );

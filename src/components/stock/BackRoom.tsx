@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CountSheet } from "@/components/stock/CountSheet";
 import { StockLevel } from "@/components/stock/StockLevel";
 import type { InventoryItem, StockPoint } from "@/lib/types";
@@ -47,13 +47,19 @@ function History({ item, points }: { item: InventoryItem; points: StockPoint[] }
   const first = points[0];
   const last = points[points.length - 1];
   return (
-    <div className="rounded-tile bg-cream p-4">
-      <p className="mb-2 text-lg font-semibold">
-        {pictureOf(item)} {item.name}: last 30 days
+    <>
+      <p className="mb-3 flex items-center gap-3 text-2xl font-bold">
+        <span aria-hidden className="text-5xl">
+          {pictureOf(item)}
+        </span>
+        <span>
+          {item.name}
+          <span className="block text-lg font-normal text-ink-soft">The last 30 days</span>
+        </span>
       </p>
       <svg
         viewBox={`0 0 ${W} ${H}`}
-        className="h-28 w-full"
+        className="h-48 min-h-40 w-full flex-1 rounded-tile bg-cream"
         role="img"
         aria-label={`${item.name} went from ${amount(first.stock)} to ${amount(last.stock)} ${unitOf(last.stock, item.unit)}`}
         preserveAspectRatio="none"
@@ -85,7 +91,7 @@ function History({ item, points }: { item: InventoryItem; points: StockPoint[] }
         </span>
       </p>
       <p className="text-base text-ink-soft">Dashed line = time to buy more</p>
-    </div>
+    </>
   );
 }
 
@@ -95,6 +101,7 @@ export function BackRoom() {
   const [history, setHistory] = useState<{ id: string; points: StockPoint[] } | null>(null);
   const [failed, setFailed] = useState(false);
   const [counting, setCounting] = useState<InventoryItem | null>(null);
+  const panelRef = useRef<HTMLElement>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [version, setVersion] = useState(0); // bumps after a count, to reload the chart
 
@@ -108,8 +115,8 @@ export function BackRoom() {
     };
   }, []);
 
-  // Nothing is open until you tap an item (tap it again to close).
-  const selectedId = picked;
+  // The item that needs attention most comes first from the server, so it is open to start with.
+  const selectedId = picked ?? items?.[0]?.id ?? null;
 
   useEffect(() => {
     if (!selectedId) return;
@@ -144,65 +151,79 @@ export function BackRoom() {
   }
 
   return (
-    <section aria-labelledby="back-room" className="rounded-tile bg-white p-5 ring-1 ring-ink/10">
-      <h2 id="back-room" className="text-2xl font-bold">
-        In the back
-      </h2>
-      <p className="mb-4 text-lg text-ink-soft">What we use to make things</p>
+    <div className="flex flex-col gap-4 lg:min-h-0 lg:flex-1">
       {notice && (
-        <p
-          role="status"
-          className="mb-4 rounded-tile bg-sage/60 p-3 text-center text-xl font-semibold"
-        >
+        <p role="status" className="rounded-tile bg-sage/60 p-3 text-center text-xl font-semibold">
           {notice}
         </p>
       )}
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {items.map((item) => (
-          <div
-            key={item.id}
-            className={`flex flex-col gap-2 rounded-tile p-3 ring-1 ${item.id === selectedId ? "bg-lavender/40 ring-ink/30" : "bg-white ring-ink/10"}`}
-          >
-            <button
-              type="button"
-              aria-pressed={item.id === selectedId}
-              onClick={() => setPicked(item.id === selectedId ? null : item.id)}
-              className="flex flex-col gap-2 text-left"
+      <div className="flex flex-col gap-4 lg:grid lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,30rem)] lg:gap-6">
+        {/* Tap a tile to see its last 30 days on the right. On big screens the tiles share the height. */}
+        <div className="grid gap-3 sm:grid-cols-2 lg:min-h-0 lg:auto-rows-[minmax(8.5rem,1fr)] lg:grid-cols-3 lg:overflow-y-auto lg:pr-1">
+          {items.map((item) => (
+            <div
+              key={item.id}
+              className={`flex flex-col justify-between gap-2 rounded-tile p-3 ring-1 lg:p-4 ${item.id === selectedId ? "bg-lavender/40 ring-ink/30" : "bg-white ring-ink/10"}`}
             >
-              <span className="flex items-center gap-3">
-                <span aria-hidden className="text-4xl">
-                  {pictureOf(item)}
-                </span>
-                <span className="flex-1 text-lg font-semibold">{item.name}</span>
-                <span className="text-right leading-none">
-                  <span className="block text-2xl font-bold tabular-nums">
-                    {amount(item.stock)}
+              <button
+                type="button"
+                aria-pressed={item.id === selectedId}
+                onClick={() => {
+                  setPicked(item.id);
+                  // On narrow screens the chart is below the tiles: bring it into view.
+                  if (window.matchMedia("(max-width: 1023px)").matches) {
+                    panelRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                  }
+                }}
+                className="flex flex-col gap-2 text-left"
+              >
+                <span className="flex items-center gap-3">
+                  <span aria-hidden className="text-4xl lg:text-5xl">
+                    {pictureOf(item)}
                   </span>
-                  <span className="text-base text-ink-soft">{unitOf(item.stock, item.unit)}</span>
+                  <span className="flex-1 text-lg font-semibold lg:text-xl">{item.name}</span>
+                  <span className="text-right leading-none">
+                    <span className="block text-2xl font-bold tabular-nums lg:text-3xl">
+                      {amount(item.stock)}
+                    </span>
+                    <span className="text-base text-ink-soft">{unitOf(item.stock, item.unit)}</span>
+                  </span>
                 </span>
-              </span>
-              <StockLevel stock={item.stock} reorderLevel={item.reorderLevel} />
-            </button>
-            <button
-              type="button"
-              aria-label={`Count ${item.name}`}
-              onClick={() => setCounting(item)}
-              className="min-h-12 rounded-tile bg-cream text-lg font-semibold ring-1 ring-ink/15"
-            >
-              ✏️ Count
-            </button>
-          </div>
-        ))}
-      </div>
-      {selected && (
-        <div className="mt-4">
-          {points && points.length > 0 ? (
+                <StockLevel stock={item.stock} reorderLevel={item.reorderLevel} />
+              </button>
+              <button
+                type="button"
+                aria-label={`Count ${item.name}`}
+                onClick={() => setCounting(item)}
+                className="min-h-12 rounded-tile bg-cream text-lg font-semibold ring-1 ring-ink/15 lg:hidden"
+              >
+                ✏️ Count
+              </button>
+            </div>
+          ))}
+        </div>
+        <section
+          ref={panelRef}
+          aria-label="Last 30 days"
+          className="flex flex-col rounded-tile bg-white p-5 ring-1 ring-ink/10 lg:min-h-0"
+        >
+          {selected && points && points.length > 0 ? (
             <History item={selected} points={points} />
           ) : (
             <p className="text-lg text-ink-soft">Loading…</p>
           )}
-        </div>
-      )}
+          {selected && (
+            <button
+              type="button"
+              aria-label={`Count ${selected.name}`}
+              onClick={() => setCounting(selected)}
+              className="mt-4 hidden min-h-16 rounded-tile bg-sage text-xl font-bold lg:block"
+            >
+              ✏️ Count {selected.name}
+            </button>
+          )}
+        </section>
+      </div>
       {counting && (
         <CountSheet
           key={counting.id}
@@ -214,6 +235,6 @@ export function BackRoom() {
           onClose={() => setCounting(null)}
         />
       )}
-    </section>
+    </div>
   );
 }

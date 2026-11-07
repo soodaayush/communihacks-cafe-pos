@@ -33,12 +33,15 @@ export function BusyHours() {
   const busiest = shown.reduce((a, b) => (b.saleCount > a.saleCount ? b : a));
 
   return (
-    <section aria-labelledby="busy-hours" className="rounded-tile bg-white p-5 ring-1 ring-ink/10">
+    <section
+      aria-labelledby="busy-hours"
+      className="flex flex-col rounded-tile bg-white p-5 ring-1 ring-ink/10 lg:flex-1 lg:p-6"
+    >
       <h2 id="busy-hours" className="text-2xl font-bold">
         Busy hours
       </h2>
       <p className="mb-4 text-lg text-ink-soft">How many people bought, hour by hour</p>
-      <div className="flex h-40 items-end gap-2">
+      <div className="flex h-40 items-end gap-2 lg:h-auto lg:min-h-36 lg:flex-1">
         {shown.map((h) => {
           const top = h.hour === busiest.hour;
           return (

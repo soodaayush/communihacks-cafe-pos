@@ -40,12 +40,15 @@ export function BusyDays() {
   const order = [1, 2, 3, 4, 5, 6, 0];
 
   return (
-    <section aria-labelledby="busy-days" className="rounded-tile bg-white p-5 ring-1 ring-ink/10">
+    <section
+      aria-labelledby="busy-days"
+      className="flex flex-col rounded-tile bg-white p-5 ring-1 ring-ink/10 lg:flex-1 lg:p-6"
+    >
       <h2 id="busy-days" className="text-2xl font-bold">
         Busy days
       </h2>
       <p className="mb-4 text-lg text-ink-soft">How much we sell on each day of the week</p>
-      <div className="flex h-40 items-end gap-2">
+      <div className="flex h-40 items-end gap-2 lg:h-auto lg:min-h-36 lg:flex-1">
         {order.map((i) => {
           const top = i === best;
           return (
