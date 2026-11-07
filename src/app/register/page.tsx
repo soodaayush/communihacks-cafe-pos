@@ -6,11 +6,33 @@ import { OrderTray } from "@/components/register/OrderTray";
 import { PaymentChoice } from "@/components/register/PaymentChoice";
 import type { MenuItem, PaymentMethod, SaleItem } from "@/lib/types";
 
+// The open order survives switching tabs (and a refresh) by living in this browser tab's sessionStorage.
+const ORDER_KEY = "register-order";
+
+function loadOrder(): SaleItem[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(ORDER_KEY) ?? "[]");
+    return Array.isArray(saved) ? saved : [];
+  } catch {
+    return [];
+  }
+}
+
 export default function RegisterPage() {
   const [menu, setMenu] = useState<MenuItem[] | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
-  const [order, setOrder] = useState<SaleItem[]>([]);
+  // Safe to read storage here: the first render shows "Loading…" (no order) on server and client alike.
+  const [order, setOrder] = useState<SaleItem[]>(loadOrder);
   const [paying, setPaying] = useState(false);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(ORDER_KEY, JSON.stringify(order));
+    } catch {
+      // Storage blocked (private mode): the order just won't survive a tab switch.
+    }
+  }, [order]);
 
   function loadMenu() {
     fetch("/api/menu")
