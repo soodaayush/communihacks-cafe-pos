@@ -39,6 +39,8 @@ assert.ok(outcome(coffee, 24, 50).keepEachCents < 0);
 // Way too high: fewer people make up less money than now.
 assert.equal(compare(now, outcome(coffee, 24, 400)), "less");
 assert.equal(compare(now, outcome(coffee, 24, 200)), "same");
+// A tiny change (under $1 or 5% a day) reads as "about the same", like the jars look.
+assert.equal(compare(outcome(coffee, 21, 200), outcome(coffee, 21, 150)), "same");
 
 assert.deepEqual(priceRange(coffee), { minCents: 25, maxCents: 400 });
 console.log("whatif ok");
