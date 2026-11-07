@@ -22,7 +22,7 @@ export const mockMenu: MenuItem[] = [
     category: "drink",
     priceCents: 200,
     costCents: 60,
-    stock: 40,
+    stock: 120,
     reorderLevel: 10,
   },
   {
@@ -52,7 +52,7 @@ export const mockMenu: MenuItem[] = [
     category: "drink",
     priceCents: 225,
     costCents: 50,
-    stock: 20,
+    stock: 40,
     reorderLevel: 8,
   },
   {
@@ -62,7 +62,7 @@ export const mockMenu: MenuItem[] = [
     category: "food",
     priceCents: 250,
     costCents: 90,
-    stock: 12,
+    stock: 50,
     reorderLevel: 6,
   },
   {
@@ -82,7 +82,7 @@ export const mockMenu: MenuItem[] = [
     category: "food",
     priceCents: 300,
     costCents: 100,
-    stock: 10,
+    stock: 30,
     reorderLevel: 5,
   },
   {
@@ -146,18 +146,6 @@ export const mockExpenses: Expense[] = [
   { id: "e3", type: "inventory", amountCents: 600, date: "2026-11-07" },
 ];
 
-export const mockTrends: TrendPoint[] = [
-  { date: "2026-11-06", menuItemId: "m1", qtySold: 22 },
-  { date: "2026-11-07", menuItemId: "m1", qtySold: 25 },
-  { date: "2026-11-06", menuItemId: "m4", qtySold: 9 },
-  { date: "2026-11-07", menuItemId: "m4", qtySold: 12 },
-];
-
-export const mockRestock: RestockSuggestion[] = [
-  { menuItemId: "m2", stock: 8, reorderLevel: 10, suggestedQty: 20, daysLeft: 2 },
-  { menuItemId: "m4", stock: 3, reorderLevel: 8, suggestedQty: 24, daysLeft: 1 },
-];
-
 export const mockBusyHours: BusyHour[] = [
   { hour: 9, saleCount: 40, moneyInCents: 16000 },
   { hour: 12, saleCount: 65, moneyInCents: 28000 },
@@ -217,3 +205,26 @@ export function mockItemSales(range: SummaryRange, offsetDays = 0): TrendPoint[]
     })),
   );
 }
+
+/** Like GET /api/trends: the last 30 days, oldest first. */
+export const mockTrends: TrendPoint[] = [...mockItemSales("month")].reverse();
+
+/** Same rule as the real /api/restock-suggestions query, with a flat daily pace from the last week:
+ *  suggest when at the reorder level or running out within 3 days; buy a week's sales
+ *  (at least double the reorder level) minus what is on the shelf. */
+export const mockRestock: RestockSuggestion[] = mockMenu.flatMap((m) => {
+  const sold = mockItemSales("week")
+    .filter((t) => t.menuItemId === m.id)
+    .reduce((sum, t) => sum + t.qtySold, 0);
+  const daysLeft = sold > 0 ? Math.min(14, Math.floor(m.stock / (sold / 7))) : 14;
+  if (m.stock > m.reorderLevel && daysLeft > 3) return [];
+  return [
+    {
+      menuItemId: m.id,
+      stock: m.stock,
+      reorderLevel: m.reorderLevel,
+      suggestedQty: Math.max(sold, m.reorderLevel * 2) - m.stock,
+      daysLeft,
+    },
+  ];
+});
