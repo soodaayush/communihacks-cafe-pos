@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import type { BuyResult } from "@/app/api/supplies/buy/route";
 import { Icon } from "@/components/icons/Icon";
 import { pictureOf } from "@/components/icons/supplyPicture";
+import { SpeakButton } from "@/components/voice/SpeakButton";
 import type { InventoryItem } from "@/lib/types";
 import { packNote, unitOf } from "@/lib/units";
 import { money } from "./BoughtList";
@@ -76,6 +77,15 @@ export function BuySheet({
           <h2 id="buy-title" className="flex-1 text-2xl font-bold">
             {picked ? picked.name : "What did we buy?"}
           </h2>
+          <SpeakButton
+            text={
+              picked
+                ? `Bought ${picked.name}. ${qty} ${unitOf(qty, picked.packName)} for ${money(qty * picked.unitCostCents)}. Tap Save purchase to record.`
+                : "What did we buy? Tap an item to record buying it."
+            }
+            size="sm"
+            label="Read buy instructions"
+          />
           <button
             type="button"
             aria-label="Close"

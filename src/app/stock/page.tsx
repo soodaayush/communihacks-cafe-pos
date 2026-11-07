@@ -8,6 +8,7 @@ import { CountButton } from "@/components/stock/CountButton";
 import { CountSheet } from "@/components/stock/CountSheet";
 import { StockLevel } from "@/components/stock/StockLevel";
 import { Trends } from "@/components/stock/Trends";
+import { SpeakButton } from "@/components/voice/SpeakButton";
 import { imageUrl } from "@/lib/integrations/cloudinary";
 import type { MenuItem, RestockSuggestion, TrendPoint } from "@/lib/types";
 
@@ -128,10 +129,17 @@ export default function StockPage() {
       {view === "shelf" && (
         <div className="flex flex-col gap-3 lg:min-h-0 lg:flex-1">
           {/* Drinks are made to order, so the shelf only has food you can count. */}
-          <p className="flex items-center gap-2 text-lg text-ink-soft">
-            <Icon name="crate" className="size-6" />
-            Drinks are made fresh. Their ingredients are in &ldquo;In the back&rdquo;.
-          </p>
+          <div className="flex items-center justify-between text-lg text-ink-soft">
+            <p className="flex items-center gap-2">
+              <Icon name="crate" className="size-6" />
+              Drinks are made fresh. Their ingredients are in &ldquo;In the back&rdquo;.
+            </p>
+            <SpeakButton
+              text="Shelf stock. Drinks are made fresh, so their ingredients are kept in the back. Here you can count food on the shelf."
+              size="sm"
+              label="Read shelf view info"
+            />
+          </div>
           {/* On big screens the tiles share the whole height (never shorter than 11.5rem). */}
           <section
             aria-label="Shelf"
@@ -156,12 +164,19 @@ export default function StockPage() {
                     <p className="min-w-0 flex-1 text-xl font-semibold lg:text-xl 2xl:text-2xl">
                       {item.name}
                     </p>
-                    <p className="text-right">
-                      <span className="block text-number leading-none font-bold tabular-nums lg:text-4xl 2xl:text-[3.25rem]">
-                        {item.stock}
-                      </span>
-                      <span className="text-base text-ink-soft lg:text-lg">left</span>
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-right">
+                        <span className="block text-number leading-none font-bold tabular-nums lg:text-4xl 2xl:text-[3.25rem]">
+                          {item.stock}
+                        </span>
+                        <span className="text-base text-ink-soft lg:text-lg">left</span>
+                      </p>
+                      <SpeakButton
+                        text={`${item.name}, ${item.stock} left on the shelf.${runningLow.has(item.id) ? " Running low!" : ""}`}
+                        size="sm"
+                        label={`Read stock for ${item.name}`}
+                      />
+                    </div>
                   </div>
                   {/* The level fills the row; the small pencil sits at the bottom-right. */}
                   <div className="flex items-end gap-3">

@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { BusyDays } from "@/components/stock/BusyDays";
 import { BusyHours } from "@/components/stock/BusyHours";
+import { SpeakButton } from "@/components/voice/SpeakButton";
 import { imageUrl } from "@/lib/integrations/cloudinary";
 import type { MenuItem, TrendPoint } from "@/lib/types";
 
@@ -22,15 +23,28 @@ function BestSellers({ menu, trends }: { menu: MenuItem[]; trends: TrendPoint[] 
     .sort((a, b) => b.qty - a.qty);
   const maxSold = Math.max(1, ...sold.map((s) => s.qty));
 
+  const speechSummary =
+    "Best sellers in the last 4 weeks: " +
+    sold
+      .slice(0, 3)
+      .map((s, idx) => `Number ${idx + 1} is ${s.item.name} with ${s.qty} sold`)
+      .join(". ") +
+    ".";
+
   return (
     <section
       aria-labelledby="best-sellers"
       className="flex flex-col rounded-tile bg-white p-5 ring-1 ring-ink/10 lg:p-6"
     >
-      <h2 id="best-sellers" className="text-2xl font-bold">
-        Best sellers
-      </h2>
-      <p className="mb-4 text-lg text-ink-soft">How many sold in the last 4 weeks</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 id="best-sellers" className="text-2xl font-bold">
+            Best sellers
+          </h2>
+          <p className="mb-4 text-lg text-ink-soft">How many sold in the last 4 weeks</p>
+        </div>
+        <SpeakButton text={speechSummary} size="md" label="Read best sellers" />
+      </div>
       {/* On big screens the rows spread out to use the whole card. */}
       <ol className="flex flex-1 flex-col justify-between gap-2">
         {sold.map(({ item, qty }) => (
