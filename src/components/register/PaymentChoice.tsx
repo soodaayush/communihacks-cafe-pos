@@ -272,18 +272,56 @@ export function PaymentChoice({ items, totalCents, onPaid, onClose }: PaymentCho
         <div className="grid gap-6 md:grid-cols-[1fr_20rem]">
           <section aria-label="Money they gave you">
             <p className="mb-4 text-xl text-ink-soft">Tap what they give you</p>
-            <div className="flex flex-wrap gap-3">
-              {DENOMS.map((d) => (
-                <button
-                  key={d}
-                  type="button"
-                  onClick={() => setGiven((g) => [...g, d])}
-                  aria-label={`Add ${denomLabel(d)}`}
-                  className="flex min-h-touch min-w-touch items-center justify-center rounded-2xl bg-white p-2 ring-1 ring-ink/10 transition-transform motion-safe:active:scale-95"
-                >
-                  <MoneyPiece cents={d} />
-                </button>
-              ))}
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] gap-3">
+              {DENOMS.map((d) => {
+                const count = given.filter((g) => g === d).length;
+                const add = () => setGiven((g) => [...g, d]);
+                const removeOne = () =>
+                  setGiven((g) => {
+                    const i = g.lastIndexOf(d);
+                    return i < 0 ? g : [...g.slice(0, i), ...g.slice(i + 1)];
+                  });
+                return (
+                  <div
+                    key={d}
+                    className={`flex flex-col items-center gap-2 rounded-2xl p-2 ${count > 0 ? "bg-sage/30 ring-2 ring-ink/25" : "bg-white ring-1 ring-ink/10"}`}
+                  >
+                    <button
+                      type="button"
+                      onClick={add}
+                      aria-label={`Add ${denomLabel(d)}`}
+                      className="flex min-h-18 w-full items-center justify-center rounded-xl transition-transform motion-safe:active:scale-95"
+                    >
+                      <MoneyPiece cents={d} />
+                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={removeOne}
+                        disabled={count === 0}
+                        aria-label={`One less ${denomLabel(d)}`}
+                        className="flex size-11 items-center justify-center rounded-full bg-cream text-2xl font-bold ring-1 ring-ink/10 disabled:opacity-35"
+                      >
+                        −
+                      </button>
+                      <span
+                        className="w-7 text-center text-2xl font-bold tabular-nums"
+                        aria-label={`${count} × ${denomLabel(d)}`}
+                      >
+                        {count}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={add}
+                        aria-label={`One more ${denomLabel(d)}`}
+                        className="flex size-11 items-center justify-center rounded-full bg-cream text-2xl font-bold ring-1 ring-ink/10"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
             {given.length > 0 && (
               <button
