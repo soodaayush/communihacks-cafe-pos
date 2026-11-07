@@ -1,7 +1,8 @@
+import { dbOrMock } from "@/lib/api";
 import { mockMenu } from "@/lib/mock-data";
-import type { MenuItem } from "@/lib/types";
+import { listMenu } from "@/lib/queries";
 
-// TODO(dev1): SELECT menu_items with current stock and reorder_level.
+// Menu items with current stock and reorder level. Back-room stock lives at /api/supplies.
 export function GET() {
-  return Response.json(mockMenu satisfies MenuItem[]);
+  return dbOrMock(() => mockMenu, listMenu);
 }
