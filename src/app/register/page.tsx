@@ -1,9 +1,119 @@
-// TODO(dev2): ItemTile grid + OrderTray + PaymentChoice. Data: GET /api/menu, POST /api/sales.
+"use client";
+
+import { useEffect, useState } from "react";
+import { ItemTile } from "@/components/register/ItemTile";
+import { OrderTray } from "@/components/register/OrderTray";
+import { PaymentChoice } from "@/components/register/PaymentChoice";
+import type { MenuItem, PaymentMethod, SaleItem } from "@/lib/types";
+
 export default function RegisterPage() {
+  const [menu, setMenu] = useState<MenuItem[] | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [order, setOrder] = useState<SaleItem[]>([]);
+  const [paying, setPaying] = useState(false);
+
+  function loadMenu() {
+    fetch("/api/menu")
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((m: MenuItem[]) => setMenu([...m].sort((a, b) => a.category.localeCompare(b.category))))
+      .catch(() => setLoadFailed(true));
+  }
+  useEffect(loadMenu, []);
+
+  const qtyOf = (id: string) => order.find((l) => l.menuItemId === id)?.qty ?? 0;
+  const totalCents = order.reduce((s, l) => s + l.qty * l.unitPriceCents, 0);
+
+  function add(item: MenuItem) {
+    setOrder((o) =>
+      o.some((l) => l.menuItemId === item.id)
+        ? o.map((l) => (l.menuItemId === item.id ? { ...l, qty: l.qty + 1 } : l))
+        : [
+            ...o,
+            {
+              menuItemId: item.id,
+              qty: 1,
+              unitPriceCents: item.priceCents,
+              unitCostCents: item.costCents,
+            },
+          ],
+    );
+  }
+  function removeOne(id: string) {
+    setOrder((o) =>
+      o.map((l) => (l.menuItemId === id ? { ...l, qty: l.qty - 1 } : l)).filter((l) => l.qty > 0),
+    );
+  }
+
+  async function recordSale(paymentMethod: PaymentMethod) {
+    const res = await fetch("/api/sales", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ paymentMethod, totalCents, items: order }),
+    });
+    if (!res.ok) throw new Error(`Sale not saved: ${res.status}`);
+    // shortcut: stock is updated locally only; reload /api/menu once the sales route decrements it in the DB.
+    setMenu((m) => m && m.map((it) => ({ ...it, stock: it.stock - qtyOf(it.id) })));
+  }
+
+  if (!menu) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-4 text-xl">
+        {loadFailed ? (
+          <>
+            <p>Menu did not load.</p>
+            <button
+              type="button"
+              onClick={() => {
+                setLoadFailed(false);
+                loadMenu();
+              }}
+              className="min-h-touch rounded-tile bg-sage px-8 text-2xl font-bold"
+            >
+              Try again
+            </button>
+          </>
+        ) : (
+          <p className="text-ink-soft">Loading…</p>
+        )}
+      </div>
+    );
+  }
+
   return (
-    <section>
-      <h1 className="text-hero">Register</h1>
-      <p className="text-label text-ink-soft">TODO(dev2)</p>
-    </section>
+    <div className="flex flex-col gap-6 lg:grid lg:h-full lg:grid-cols-[1fr_minmax(22rem,26rem)]">
+      <section
+        aria-label="Menu"
+        className="grid auto-rows-max content-start gap-4 sm:grid-cols-2 lg:overflow-y-auto lg:pr-1 xl:grid-cols-4"
+      >
+        {menu.map((item) => (
+          <ItemTile key={item.id} item={item} qtyInTray={qtyOf(item.id)} onTap={add} />
+        ))}
+      </section>
+
+      <OrderTray
+        items={order}
+        menu={menu}
+        totalCents={totalCents}
+        onAdd={(id) => {
+          const item = menu.find((m) => m.id === id);
+          if (item) add(item);
+        }}
+        onRemove={removeOne}
+        onClear={() => setOrder([])}
+        onPay={() => setPaying(true)}
+      />
+
+      {paying && (
+        <PaymentChoice
+          items={order}
+          totalCents={totalCents}
+          onPaid={recordSale}
+          onClose={(paid) => {
+            setPaying(false);
+            if (paid) setOrder([]);
+          }}
+        />
+      )}
+    </div>
   );
 }
