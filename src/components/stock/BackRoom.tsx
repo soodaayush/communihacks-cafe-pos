@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { CountSheet } from "@/components/stock/CountSheet";
 import { StockLevel } from "@/components/stock/StockLevel";
 import type { InventoryItem, StockPoint } from "@/lib/types";
 
@@ -93,6 +94,9 @@ export function BackRoom() {
   const [picked, setPicked] = useState<string | null>(null);
   const [history, setHistory] = useState<{ id: string; points: StockPoint[] } | null>(null);
   const [failed, setFailed] = useState(false);
+  const [counting, setCounting] = useState<InventoryItem | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [version, setVersion] = useState(0); // bumps after a count, to reload the chart
 
   useEffect(() => {
     let live = true;
@@ -116,7 +120,7 @@ export function BackRoom() {
     return () => {
       live = false;
     };
-  }, [selectedId]);
+  }, [selectedId, version]);
 
   if (failed) return null;
   if (!items) return <p className="text-lg text-ink-soft">Loading the back room…</p>;
@@ -124,33 +128,70 @@ export function BackRoom() {
   const selected = items.find((i) => i.id === selectedId);
   const points = history?.id === selectedId ? history.points : null;
 
+  async function saveCount(item: InventoryItem, count: number) {
+    const res = await fetch("/api/supplies/count", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ inventoryItemId: item.id, stock: count }),
+    });
+    if (!res.ok) throw new Error("save failed");
+    const updated: InventoryItem = await res.json();
+    setItems((list) => list?.map((i) => (i.id === updated.id ? updated : i)) ?? list);
+    setVersion((v) => v + 1);
+    setCounting(null);
+    setNotice(`✓ Saved: ${item.name} ${amount(count)} ${unitOf(count, item.unit)}`);
+    setTimeout(() => setNotice(null), 4000);
+  }
+
   return (
     <section aria-labelledby="back-room" className="rounded-tile bg-white p-5 ring-1 ring-ink/10">
       <h2 id="back-room" className="text-2xl font-bold">
         In the back
       </h2>
       <p className="mb-4 text-lg text-ink-soft">What we use to make things</p>
+      {notice && (
+        <p
+          role="status"
+          className="mb-4 rounded-tile bg-sage/60 p-3 text-center text-xl font-semibold"
+        >
+          {notice}
+        </p>
+      )}
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {items.map((item) => (
-          <button
+          <div
             key={item.id}
-            type="button"
-            aria-pressed={item.id === selectedId}
-            onClick={() => setPicked(item.id === selectedId ? null : item.id)}
-            className={`flex flex-col gap-2 rounded-tile p-3 text-left ring-1 ${item.id === selectedId ? "bg-lavender/40 ring-ink/30" : "bg-white ring-ink/10"}`}
+            className={`flex flex-col gap-2 rounded-tile p-3 ring-1 ${item.id === selectedId ? "bg-lavender/40 ring-ink/30" : "bg-white ring-ink/10"}`}
           >
-            <span className="flex items-center gap-3">
-              <span aria-hidden className="text-4xl">
-                {pictureOf(item)}
+            <button
+              type="button"
+              aria-pressed={item.id === selectedId}
+              onClick={() => setPicked(item.id === selectedId ? null : item.id)}
+              className="flex flex-col gap-2 text-left"
+            >
+              <span className="flex items-center gap-3">
+                <span aria-hidden className="text-4xl">
+                  {pictureOf(item)}
+                </span>
+                <span className="flex-1 text-lg font-semibold">{item.name}</span>
+                <span className="text-right leading-none">
+                  <span className="block text-2xl font-bold tabular-nums">
+                    {amount(item.stock)}
+                  </span>
+                  <span className="text-base text-ink-soft">{unitOf(item.stock, item.unit)}</span>
+                </span>
               </span>
-              <span className="flex-1 text-lg font-semibold">{item.name}</span>
-              <span className="text-right leading-none">
-                <span className="block text-2xl font-bold tabular-nums">{amount(item.stock)}</span>
-                <span className="text-base text-ink-soft">{unitOf(item.stock, item.unit)}</span>
-              </span>
-            </span>
-            <StockLevel stock={item.stock} reorderLevel={item.reorderLevel} />
-          </button>
+              <StockLevel stock={item.stock} reorderLevel={item.reorderLevel} />
+            </button>
+            <button
+              type="button"
+              aria-label={`Count ${item.name}`}
+              onClick={() => setCounting(item)}
+              className="min-h-12 rounded-tile bg-cream text-lg font-semibold ring-1 ring-ink/15"
+            >
+              ✏️ Count
+            </button>
+          </div>
         ))}
       </div>
       {selected && (
@@ -161,6 +202,17 @@ export function BackRoom() {
             <p className="text-lg text-ink-soft">Loading…</p>
           )}
         </div>
+      )}
+      {counting && (
+        <CountSheet
+          key={counting.id}
+          name={counting.name}
+          picture={<span aria-hidden>{pictureOf(counting)}</span>}
+          unit={counting.unit}
+          current={Math.round(counting.stock)}
+          onSave={(n) => saveCount(counting, n)}
+          onClose={() => setCounting(null)}
+        />
       )}
     </section>
   );

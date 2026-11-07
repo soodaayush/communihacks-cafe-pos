@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { BackRoom } from "@/components/stock/BackRoom";
 import { BusyHours } from "@/components/stock/BusyHours";
+import { CountSheet } from "@/components/stock/CountSheet";
 import { StockLevel } from "@/components/stock/StockLevel";
 import { imageUrl } from "@/lib/integrations/cloudinary";
 import type { MenuItem, RestockSuggestion, TrendPoint } from "@/lib/types";
@@ -28,6 +29,8 @@ export default function StockPage() {
   const [trends, setTrends] = useState<TrendPoint[]>([]);
   const [loadFailed, setLoadFailed] = useState(false);
   const [view, setView] = useState<View>("shelf");
+  const [counting, setCounting] = useState<MenuItem | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   function load() {
     Promise.all([
@@ -43,6 +46,19 @@ export default function StockPage() {
       .catch(() => setLoadFailed(true));
   }
   useEffect(load, []);
+
+  async function saveCount(item: MenuItem, count: number) {
+    const res = await fetch("/api/inventory/count", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ menuItemId: item.id, stock: count }),
+    });
+    if (!res.ok) throw new Error("save failed");
+    setCounting(null);
+    setNotice(`✓ Saved: ${item.name} ${count} left`);
+    setTimeout(() => setNotice(null), 4000);
+    load();
+  }
 
   if (!menu) {
     return (
@@ -110,6 +126,12 @@ export default function StockPage() {
         ))}
       </div>
 
+      {notice && (
+        <p role="status" className="rounded-tile bg-sage/60 p-3 text-center text-xl font-semibold">
+          {notice}
+        </p>
+      )}
+
       {view === "shelf" && (
         <div className="flex flex-col gap-6 lg:grid lg:min-h-0 lg:flex-1 lg:grid-cols-[1fr_minmax(22rem,26rem)]">
           <div className="flex flex-col gap-6 lg:overflow-y-auto lg:pr-1">
@@ -145,6 +167,14 @@ export default function StockPage() {
                     low={runningLow.has(item.id)}
                     capacity={Math.ceil(perDay(item.id) * 7)}
                   />
+                  <button
+                    type="button"
+                    aria-label={`Count ${item.name}`}
+                    onClick={() => setCounting(item)}
+                    className="min-h-12 rounded-tile bg-cream text-lg font-semibold ring-1 ring-ink/15"
+                  >
+                    ✏️ Count
+                  </button>
                 </div>
               ))}
             </section>
@@ -187,6 +217,26 @@ export default function StockPage() {
             </section>
           </div>
         </div>
+      )}
+      {counting && (
+        <CountSheet
+          key={counting.id}
+          name={counting.name}
+          picture={
+            <Image
+              src={imageUrl(counting.imagePublicId, 96)}
+              alt=""
+              width={56}
+              height={56}
+              unoptimized
+              className="size-14"
+            />
+          }
+          unit="left"
+          current={counting.stock}
+          onSave={(n) => saveCount(counting, n)}
+          onClose={() => setCounting(null)}
+        />
       )}
       {view === "back" && (
         <div className="w-full max-w-4xl">
