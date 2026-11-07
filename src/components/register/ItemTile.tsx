@@ -38,7 +38,7 @@ export function ItemTile({ item, qtyInTray, onTap }: ItemTileProps) {
           className="h-3/4 w-auto"
         />
       </span>
-      <span className="flex items-baseline justify-between gap-2 px-4 py-3">
+      <span className="flex items-center justify-between gap-2 px-4 py-3">
         <span className="text-xl font-semibold">{item.name}</span>
         <span className="flex items-center gap-1 text-xl font-bold tabular-nums">
           {/* Drinks show only ">": each size's price is in the size menu. */}
