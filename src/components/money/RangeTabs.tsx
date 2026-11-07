@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Icon, type IconName } from "@/components/icons/Icon";
 
 export type MoneyRange = "day" | "week";
 
@@ -6,7 +7,7 @@ export const RANGE_LABEL: Record<MoneyRange, string> = {
   day: "Today",
   week: "This week",
 };
-const ICON: Record<MoneyRange, string> = { day: "☀️", week: "🗓️" };
+const ICON: Record<MoneyRange, IconName> = { day: "sun", week: "calendar" };
 
 /** Today / This week as big tabs. Today comes first: the shift they just worked. */
 export function RangeTabs({ range }: { range: MoneyRange }) {
@@ -19,9 +20,7 @@ export function RangeTabs({ range }: { range: MoneyRange }) {
           aria-current={r === range ? "page" : undefined}
           className={`flex min-h-14 flex-1 items-center justify-center gap-2 rounded-full text-lg font-bold motion-safe:transition-[background-color,box-shadow] motion-safe:duration-200 sm:flex-none sm:px-6 sm:text-xl ${r === range ? "bg-white ring-2 ring-ink" : "bg-white/50 ring-1 ring-ink/10"}`}
         >
-          <span aria-hidden className="hidden sm:inline">
-            {ICON[r]}
-          </span>
+          <Icon name={ICON[r]} className="hidden size-7 sm:block" />
           {RANGE_LABEL[r]}
         </Link>
       ))}

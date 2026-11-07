@@ -9,7 +9,6 @@ import type {
   Purchase,
   RestockSuggestion,
   Sale,
-  StockPoint,
   SummaryRange,
   TrendPoint,
 } from "./types";
@@ -150,11 +149,6 @@ export const mockBusyHours: BusyHour[] = [
   { hour: 9, saleCount: 40, moneyInCents: 16000 },
   { hour: 12, saleCount: 65, moneyInCents: 28000 },
   { hour: 15, saleCount: 30, moneyInCents: 12000 },
-];
-
-export const mockStockHistory: StockPoint[] = [
-  { date: "2026-11-06", stock: 5.2 },
-  { date: "2026-11-07", stock: 4.5 },
 ];
 
 export const RANGE_DAYS: Record<SummaryRange, number> = { day: 1, week: 7, month: 30 };

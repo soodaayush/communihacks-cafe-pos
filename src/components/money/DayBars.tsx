@@ -1,3 +1,4 @@
+import { Icon } from "@/components/icons/Icon";
 import { formatDollars } from "@/lib/money";
 import type { DayKept } from "@/lib/money-data";
 
@@ -25,8 +26,8 @@ export function DayBars({ days }: { days: DayKept[] }) {
       <div className="flex min-h-44 flex-1 items-end gap-2" aria-hidden>
         {ordered.map((d) => (
           <div key={d.date} className="flex h-full flex-1 flex-col items-center justify-end gap-1">
-            <span className="h-7 text-2xl leading-none">
-              {d.date === best?.date && kept(d) > 0 ? "⭐" : ""}
+            <span className="flex h-7 items-end">
+              {d.date === best?.date && kept(d) > 0 && <Icon name="star" className="size-7" />}
             </span>
             <span
               className={`w-full rounded-t-xl ${d.date === best?.date ? "bg-sage" : "bg-sage/50"}`}

@@ -1,3 +1,5 @@
+import { Icon, type IconName } from "@/components/icons/Icon";
+
 export interface StockLevelProps {
   stock: number;
   reorderLevel: number;
@@ -10,10 +12,10 @@ export interface StockLevelProps {
 type Level = "out" | "low" | "ok";
 
 // Colour never works alone: each level also has its own icon and words.
-const LOOK: Record<Level, { bar: string; icon: string; label: string }> = {
-  out: { bar: "bg-blush", icon: "×", label: "None left" },
-  low: { bar: "bg-stock-low", icon: "!", label: "Running low" },
-  ok: { bar: "bg-sage", icon: "✓", label: "Plenty" },
+const LOOK: Record<Level, { bar: string; icon: IconName; label: string }> = {
+  out: { bar: "bg-blush", icon: "cross", label: "None left" },
+  low: { bar: "bg-stock-low", icon: "alert", label: "Running low" },
+  ok: { bar: "bg-sage", icon: "check", label: "Plenty" },
 };
 
 export function StockLevel({ stock, reorderLevel, capacity, low = false }: StockLevelProps) {
@@ -31,9 +33,9 @@ export function StockLevel({ stock, reorderLevel, capacity, low = false }: Stock
       <p className="mt-2 flex items-center gap-2 text-lg font-semibold">
         <span
           aria-hidden
-          className={`flex size-6 items-center justify-center rounded-full text-sm font-bold ${look.bar}`}
+          className={`flex size-7 items-center justify-center rounded-full ${look.bar}`}
         >
-          {look.icon}
+          <Icon name={look.icon} className="size-4" />
         </span>
         {look.label}
       </p>
