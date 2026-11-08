@@ -28,7 +28,13 @@ function read(): boolean {
   }
 }
 
+let toggledAt = -Infinity;
+
+/** True for a moment after the switch is flipped: the speaker buttons animate only then, not on load. */
+export const voiceJustToggled = (): boolean => performance.now() - toggledAt < 1000;
+
 export function setSoundsOn(on: boolean): void {
+  toggledAt = performance.now();
   try {
     localStorage.setItem(KEY, on ? "0" : "1");
   } catch {

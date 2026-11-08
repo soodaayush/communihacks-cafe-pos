@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useSoundsOn } from "@/lib/sounds";
+import { useEffect, useState } from "react";
+import { useSoundsOn, voiceJustToggled } from "@/lib/sounds";
 import { speak, stopSpeaking, type SpeakState } from "@/lib/speech";
 
 export interface SpeakButtonProps {
@@ -32,7 +32,21 @@ export function SpeakButton({
 }: SpeakButtonProps) {
   const [state, setState] = useState<SpeakState>("idle");
   // The speaker switch in the nav bar: when the voice is off, no speaker buttons anywhere.
-  if (!useSoundsOn()) return null;
+  // Flipping it makes them pop in, or shrink away first; on page load they just appear.
+  const on = useSoundsOn();
+  const [hidden, setHidden] = useState(!on);
+  const [wasOn, setWasOn] = useState(on);
+  if (on !== wasOn) {
+    setWasOn(on);
+    if (on) setHidden(false);
+  }
+  useEffect(() => {
+    if (on) return;
+    const t = setTimeout(() => setHidden(true), voiceJustToggled() ? 220 : 0);
+    return () => clearTimeout(t);
+  }, [on]);
+  if (hidden) return null;
+  const motion = voiceJustToggled() ? (on ? "speak-in" : "speak-out") : "";
   return (
     <button
       type="button"
@@ -44,7 +58,7 @@ export function SpeakButton({
       aria-label={state === "idle" ? label : "Stop reading"}
       aria-pressed={state !== "idle"}
       aria-busy={state === "loading"}
-      className={`flex shrink-0 items-center justify-center rounded-full ring-1 ring-ink/10 transition-transform motion-safe:active:scale-95 ${state === "idle" ? "bg-white" : "bg-sage"} ${state === "loading" ? "motion-safe:animate-pulse" : ""} ${SIZE_CLASSES[size]} ${className}`}
+      className={`${motion} flex shrink-0 items-center justify-center rounded-full ring-1 ring-ink/10 transition-transform motion-safe:active:scale-95 ${state === "idle" ? "bg-white" : "bg-sage"} ${state === "loading" ? "motion-safe:animate-pulse" : ""} ${SIZE_CLASSES[size]} ${className}`}
     >
       <svg
         aria-hidden

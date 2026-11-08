@@ -22,7 +22,10 @@ export function SoundToggle() {
       title={on ? "Voice on" : "Voice off"}
       data-sound="none"
       onClick={() => {
-        if (on) stopSpeaking();
+        if (on) {
+          stopSpeaking();
+          playSound("mute"); // played while sounds are still on
+        }
         setSoundsOn(!on);
         if (!on) setTimeout(() => playSound("success"), 50); // a little hello when turned on
       }}

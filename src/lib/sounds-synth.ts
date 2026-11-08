@@ -27,8 +27,16 @@ export function createOutput(ctx: BaseAudioContext): GainNode {
   return master;
 }
 
-export type SoundName = "add" | "remove" | "tap" | "success" | "sale" | "error";
-export const SOUND_NAMES: SoundName[] = ["add", "remove", "tap", "success", "sale", "error"];
+export type SoundName = "add" | "remove" | "tap" | "success" | "sale" | "error" | "mute";
+export const SOUND_NAMES: SoundName[] = [
+  "add",
+  "remove",
+  "tap",
+  "success",
+  "sale",
+  "error",
+  "mute",
+];
 
 interface Note {
   at: number;
@@ -119,6 +127,15 @@ export function scheduleSound(
       note(ctx, out, { at, freq: 659.25, seconds: 0.2, peak: 0.14 }, pitch);
       note(ctx, out, { at: at + 0.09, freq: 987.77, seconds: 0.3, peak: 0.14 }, pitch);
       break;
+    case "mute": // "success" in reverse, softer: two notes settling down to quiet
+      note(ctx, out, { at, freq: 987.77, seconds: 0.16, peak: 0.1 }, pitch);
+      note(
+        ctx,
+        out,
+        { at: at + 0.1, freq: 587.33, toFreq: 523.25, seconds: 0.32, peak: 0.09 },
+        pitch,
+      );
+      break;
     case "sale": // a cash register: drawer, then two bell notes
       clack(ctx, out, at, 0.12);
       bell(ctx, out, at + 0.05, 1318.5, 0.55, 0.11, pitch);
@@ -144,4 +161,5 @@ export const SOUND_SECONDS: Record<SoundName, number> = {
   success: 0.41,
   sale: 0.9,
   error: 0.4,
+  mute: 0.42,
 };

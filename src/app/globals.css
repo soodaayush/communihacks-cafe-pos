@@ -45,6 +45,34 @@ a.bg-white {
   }
 }
 
+/* Speaker buttons when the voice switch is flipped: a soft pop in, a quick shrink away. */
+@keyframes speak-in {
+  from {
+    opacity: 0;
+    transform: scale(0.3) rotate(-15deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.15) rotate(4deg);
+  }
+  to {
+    transform: scale(1) rotate(0);
+  }
+}
+@keyframes speak-out {
+  to {
+    opacity: 0;
+    transform: scale(0.3) rotate(10deg);
+  }
+}
+.speak-in {
+  animation: speak-in 360ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.speak-out {
+  animation: speak-out 200ms ease-in both;
+  pointer-events: none;
+}
+
 /* Calm motion: anyone who asks for less gets none. */
 @media (prefers-reduced-motion: reduce) {
   * {
