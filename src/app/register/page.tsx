@@ -6,6 +6,7 @@ import { OrderTray } from "@/components/register/OrderTray";
 import { PaymentChoice } from "@/components/register/PaymentChoice";
 import { SizePicker } from "@/components/register/SizePicker";
 import { hasSizes, sizePriceCents } from "@/lib/sizes";
+import { playSound } from "@/lib/sounds";
 import type { DrinkSize, MenuItem, PaymentMethod, SaleItem } from "@/lib/types";
 
 // The open order survives switching tabs (and a refresh) by living in this browser tab's sessionStorage.
@@ -79,13 +80,21 @@ export default function RegisterPage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ paymentMethod, totalCents, items: order }),
-    });
+    }).catch(() => null);
+    if (!res) {
+      playSound("error");
+      throw new Error("Sale not saved: no connection");
+    }
     if (res.status === 404) {
       // The menu changed under this page (the database was reset, so the items have new ids).
       // Reload to get the current menu; the order has to be taken again.
       window.location.reload();
     }
-    if (!res.ok) throw new Error(`Sale not saved: ${res.status}`);
+    if (!res.ok) {
+      playSound("error");
+      throw new Error(`Sale not saved: ${res.status}`);
+    }
+    playSound("sale");
     // The server lowers the stock too (DB or mock shelf); this just updates the tiles without a reload.
     setMenu((m) => m && m.map((it) => ({ ...it, stock: it.stock - qtyOf(it.id) })));
   }

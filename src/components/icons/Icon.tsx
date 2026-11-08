@@ -229,6 +229,18 @@ const ICONS = {
       <path d="M17 24v.1M22 31v.1M30 25v.1M28 33v.1" strokeWidth={3.5} />
     </>
   ),
+  volume: (
+    <>
+      <path d="M6 19h8l10-8v26l-10-8H6z" fill={SKY} />
+      <path d="M31 18a9 9 0 0 1 0 12M36 13a16 16 0 0 1 0 22" />
+    </>
+  ),
+  volumeOff: (
+    <>
+      <path d="M6 19h8l10-8v26l-10-8H6z" fill={SKY} />
+      <path d="M32 19l10 10M42 19L32 29" />
+    </>
+  ),
 } satisfies Record<string, ReactNode>;
 
 export type IconName = keyof typeof ICONS;

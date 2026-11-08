@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Atkinson_Hyperlegible_Next } from "next/font/google";
 import { NavBar } from "@/components/nav/NavBar";
+import { SoundProvider } from "@/components/nav/SoundProvider";
 import "./globals.css";
 
 // Made by the Braille Institute for low-vision readers: letters that are hard to mix up.
@@ -24,6 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${font.className} flex h-dvh flex-col`}>
         <main className="min-h-0 flex-1 overflow-y-auto p-4 lg:p-6">{children}</main>
         <NavBar />
+        <SoundProvider />
       </body>
     </html>
   );

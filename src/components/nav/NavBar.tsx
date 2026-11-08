@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon, type IconName } from "@/components/icons/Icon";
+import { SoundToggle } from "@/components/nav/SoundToggle";
 
 const LINKS: { href: string; icon: IconName; label: string }[] = [
   { href: "/register", icon: "cart", label: "Register" },
@@ -13,7 +14,7 @@ const LINKS: { href: string; icon: IconName; label: string }[] = [
 export function NavBar() {
   const path = usePathname();
   return (
-    <nav className="grid grid-cols-3 gap-3 border-t border-ink/10 bg-lavender/60 px-4 py-3">
+    <nav className="grid grid-cols-[repeat(3,1fr)_auto] gap-3 border-t border-ink/10 bg-lavender/60 px-4 py-3">
       {LINKS.map(({ href, icon, label }) => {
         const active = path.startsWith(href);
         return (
@@ -28,6 +29,7 @@ export function NavBar() {
           </Link>
         );
       })}
+      <SoundToggle />
     </nav>
   );
 }

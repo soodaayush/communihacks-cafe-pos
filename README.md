@@ -22,6 +22,14 @@ Every speaker button reads its text aloud through `POST /api/speak`, which calls
 
 To save credits, a sentence is generated once and reused (server cache, plus the page remembers what it already fetched), a sentence can be at most 1000 characters, and at most 60 new sentences are sent per minute (`ELEVENLABS_MAX_PER_MINUTE`). Tap a speaker again to stop it.
 
+### Button sounds
+
+Buttons make small sounds: a soft pop when something is added (an item, a bill, a stock count), a soft drop when it is removed, a chime when something is saved, a cash register bell when a sale is saved, and two gentle falling notes when something goes wrong. They are short, quiet and built in the browser (`src/lib/sounds-synth.ts`), so they play instantly and need no files or keys. The speaker button in the nav bar turns them off, and that choice is remembered on the device.
+
+`SoundProvider` (mounted once in the layout) finds the right sound by a button's label ("One more...", "Add $20", "50 less"), or by `data-sound="add" | "remove" | "tap" | "none"` on the button.
+
+Optional: `npm run sounds` makes ElevenLabs Sound Effects versions of them in `public/sounds` (the key needs the Sound Effects permission). Once `public/sounds/manifest.json` exists the app plays those files; delete it to go back to the built-in sounds.
+
 ### Database (Tiger Data)
 
 1. Get the `DATABASE_URL` from the team lead (privately, never in git) and put it in `.env.local`.

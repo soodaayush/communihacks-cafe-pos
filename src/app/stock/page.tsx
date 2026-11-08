@@ -11,6 +11,7 @@ import { Trends } from "@/components/stock/Trends";
 import { SpeakButton } from "@/components/voice/SpeakButton";
 import { imageUrl } from "@/lib/integrations/cloudinary";
 import type { MenuItem, RestockSuggestion, TrendPoint } from "@/lib/types";
+import { playSound } from "@/lib/sounds";
 
 // View only: this screen shows what is on the shelf. Buying happens outside the register.
 
@@ -58,6 +59,7 @@ export default function StockPage() {
     });
     if (!res.ok) throw new Error("save failed");
     setCounting(null);
+    playSound("success");
     setNotice(`Saved: ${item.name} ${count} left`);
     setTimeout(() => setNotice(null), 4000);
     load();

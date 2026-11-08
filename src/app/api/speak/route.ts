@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { ELEVENLABS_BASE as BASE, perMinuteLimit } from "@/lib/elevenlabs";
 import { speakableText } from "@/lib/speech";
 import type { SpeakRequest, SpeakResponse } from "@/lib/types";
 
@@ -10,7 +11,6 @@ import type { SpeakRequest, SpeakResponse } from "@/lib/types";
 // credits, the audio for a given sentence is made once and reused (cache), a sentence can only be so
 // long, and only so many new sentences can be sent per minute.
 
-const BASE = process.env.ELEVENLABS_BASE_URL ?? "https://api.elevenlabs.io"; // regional hosts also work
 // Jessica: bright, warm and conversational, the friendliest of the built-in voices. Change it with
 // ELEVENLABS_VOICE_ID (see .env.example for other choices).
 const VOICE = process.env.ELEVENLABS_VOICE_ID || "cgSgspJ2msm6clMCkdW9";
@@ -27,20 +27,10 @@ interface Audio {
 const g = globalThis as unknown as {
   speakCache?: Map<string, Audio>;
   speakInflight?: Map<string, Promise<Audio | null>>;
-  speakWindow?: { start: number; count: number };
 };
 const cache = (g.speakCache ??= new Map());
 const inflight = (g.speakInflight ??= new Map());
-const windowState = (g.speakWindow ??= { start: 0, count: 0 });
-
-function withinRateLimit(): boolean {
-  const now = Date.now();
-  if (now - windowState.start > 60_000) {
-    windowState.start = now;
-    windowState.count = 0;
-  }
-  return ++windowState.count <= MAX_NEW_PER_MINUTE;
-}
+const withinRateLimit = perMinuteLimit("speak", MAX_NEW_PER_MINUTE);
 
 async function fromElevenLabs(text: string, apiKey: string): Promise<Audio | null> {
   try {

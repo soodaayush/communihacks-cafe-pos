@@ -14,7 +14,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "db:schema": "tsx --env-file-if-exists=.env.local scripts/run-schema.ts",
-    "db:seed": "tsx --env-file-if-exists=.env.local scripts/seed.ts"
+    "db:seed": "tsx --env-file-if-exists=.env.local scripts/seed.ts",
+    "sounds": "tsx --env-file-if-exists=.env.local scripts/make-sounds.ts"
   },
   "dependencies": {
     "@google/genai": "3.0.0",

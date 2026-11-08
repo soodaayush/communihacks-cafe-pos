@@ -47,6 +47,7 @@ export function OrderTray({
           <button
             type="button"
             onClick={onClear}
+            data-sound="remove"
             className="flex min-h-12 items-center gap-2 rounded-full bg-blush/60 px-4 text-lg font-semibold"
           >
             <svg

@@ -60,6 +60,7 @@ export function SizePicker({ item, onPick, onClose }: SizePickerProps) {
               <button
                 type="button"
                 onClick={() => onPick(size)}
+                data-sound="add"
                 className="flex w-full flex-col items-center justify-end gap-3 transition-transform motion-safe:active:scale-[0.97]"
               >
                 <span className="flex h-24 items-end">
