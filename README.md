@@ -1,8 +1,26 @@
 # KW Habilitation Café POS
 
-Picture-first café register (PWA) that teaches how money works: a register, stock, money tracking, and a Learn page where the cashier practises adding and making change on real sales. Built for CommuniHacks. All data is fake.
+A café register and money-learning app for the social-enterprise café run by KW Habilitation, built for CommuniHacks. The cashier is a person with an intellectual disability who finds reading and maths hard, so the whole app is **picture-first**: big touch targets, calm colours, very little text, whole-dollar amounts where possible, and everything can be read aloud. It also helps the café's staff see how the business is doing (sales, spending, stock, what is left over) in plain terms. All data is fake.
+
+## What it does
+
+The app has four screens, one tab each:
+
+- **Register**: tap pictures to build an order, pick a size for drinks, then pay with cash (tap the bills and coins the customer gave and see the change to hand back) or card. It keeps working without Wi-Fi: a sale waits on the tablet and is sent when the connection is back, counted once.
+- **Stock**: what is on the shelf and in the back room, as pictures and "% full". Drinks are made to order, so the number that matters is how many more the café can still make from its ingredients. Staff can count stock, and the app suggests what to buy, aware of busy weekdays.
+- **Money**: money in hand, what came in versus what was spent, whether the monthly bills are covered, what is left over this month, and the busiest hours. Staff can record a supply purchase, which also updates stock. Three short insights in plain words sit at the top.
+- **Learn**: a log of every real sale. From any sale the cashier practises **adding up** (why the items make the total) and **making change**. It works like Khan Academy: wrong answers grey out, up to three hints, a short "why", and a star for a clean run. Gemini writes the hints, but never gives the answer.
+
+Requirements from the café that this covers: tracking sales, expenses and profit; a budget that carries its balance forward; a dashboard; inventory and forecasting (restock suggestions); and a learning tool that makes money in, money out and money left legible.
+
+## How it is built
 
 Stack: Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · Tiger Data (Postgres + TimescaleDB) · ElevenLabs · Google Gemini. It runs locally (`npm run dev`) for the demo; there is no hosted deployment.
+
+- **Tiger Data** stores every sale as time-series data and feeds the dashboards (details under "Database" below).
+- **Gemini** words the Learn hints and the Money insights. Numbers and right answers are always worked out in code, never by the AI, and fixed wording is used if Gemini is slow or down.
+- **ElevenLabs** reads every speaker button aloud, with the browser's own voice as a fallback.
+- It is a PWA: it can be installed on a tablet, and the register opens offline.
 
 ## Run
 
