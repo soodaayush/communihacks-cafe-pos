@@ -11,7 +11,9 @@ import type { SpeakRequest, SpeakResponse } from "@/lib/types";
 // long, and only so many new sentences can be sent per minute.
 
 const BASE = process.env.ELEVENLABS_BASE_URL ?? "https://api.elevenlabs.io"; // regional hosts also work
-const VOICE = process.env.ELEVENLABS_VOICE_ID || "JBFqnCBsd6RMkjVDRZzb";
+// Jessica: bright, warm and conversational, the friendliest of the built-in voices. Change it with
+// ELEVENLABS_VOICE_ID (see .env.example for other choices).
+const VOICE = process.env.ELEVENLABS_VOICE_ID || "cgSgspJ2msm6clMCkdW9";
 const MODEL = process.env.ELEVENLABS_MODEL || "eleven_flash_v2_5"; // fast, and half the credits of v2
 const MAX_CHARS = 1000;
 const MAX_NEW_PER_MINUTE = Number(process.env.ELEVENLABS_MAX_PER_MINUTE) || 60;

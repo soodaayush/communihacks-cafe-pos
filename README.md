@@ -17,7 +17,7 @@ No env vars are needed to start: every API route returns mock data. Copy `.env.e
 Every speaker button reads its text aloud through `POST /api/speak`, which calls ElevenLabs text-to-speech. The API key stays on the server (`src/app/api/speak/route.ts`); the browser never sees it.
 
 1. Create a key at https://elevenlabs.io/app/api/api-keys and put it in `.env.local` as `ELEVENLABS_API_KEY=...` (never commit it).
-2. Optional: `ELEVENLABS_VOICE_ID` (copy a voice's ID from the Voice Library) and `ELEVENLABS_MODEL` (default `eleven_flash_v2_5`).
+2. Optional: `ELEVENLABS_VOICE_ID` (the default is Jessica, a bright, warm voice; other choices are listed in `.env.example`, or copy any voice's ID from the Voice Library) and `ELEVENLABS_MODEL` (default `eleven_flash_v2_5`).
 3. Restart `npm run dev`. Without a key, or if ElevenLabs is down or out of credits, the speaker falls back to the browser's built-in voice, so the app always talks.
 
 To save credits, a sentence is generated once and reused (server cache, plus the page remembers what it already fetched), a sentence can be at most 1000 characters, and at most 60 new sentences are sent per minute (`ELEVENLABS_MAX_PER_MINUTE`). Tap a speaker again to stop it.
