@@ -54,7 +54,7 @@ export function ItemPicture({
   );
 }
 
-/** A picture by its Cloudinary id (the games draw pictures from the question itself). */
+/** A menu picture by its image id (the games draw pictures from the question itself). */
 export function PieceImage({
   id,
   className = "size-14 sm:size-20 [@media(max-height:760px)]:size-12",

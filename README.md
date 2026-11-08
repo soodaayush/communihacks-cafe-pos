@@ -1,8 +1,8 @@
 # KW Habilitation Café POS
 
-Picture-first café register (PWA) that teaches how money works. Built for CommuniHacks. All data is fake.
+Picture-first café register (PWA) that teaches how money works: a register, stock, money tracking, and a Learn page where the cashier practises adding and making change on real sales. Built for CommuniHacks. All data is fake.
 
-Stack: Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · Tiger Data (Postgres + TimescaleDB) · ElevenLabs · Gemini. Deploy target: Vultr.
+Stack: Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · Tiger Data (Postgres + TimescaleDB) · ElevenLabs · Google Gemini. It runs locally (`npm run dev`) for the demo; there is no hosted deployment.
 
 ## Run
 
@@ -10,7 +10,7 @@ Stack: Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · Ti
 npm install && npm run dev     # http://localhost:3000
 ```
 
-No env vars are needed to start: every API route returns mock data. Copy `.env.example` to `.env.local` to connect Tiger Data, ElevenLabs and Gemini. Without `GEMINI_API_KEY`, insights use local wording.
+No env vars are needed to start: every API route returns mock data. Copy `.env.example` to `.env.local` to connect Tiger Data, ElevenLabs and Gemini. Without `GEMINI_API_KEY`, insights and Learn hints use fixed, local wording.
 
 ### Read aloud (ElevenLabs)
 
@@ -30,6 +30,19 @@ Buttons make small sounds: a soft pop when something is added (an item, a bill, 
 
 Optional: `npm run sounds` makes ElevenLabs Sound Effects versions of them in `public/sounds` (the key needs the Sound Effects permission). Once `public/sounds/manifest.json` exists the app plays those files; delete it to go back to the built-in sounds.
 
+### Learn page (Gemini)
+
+The Learn tab lists every sale (`src/app/learn`). Pick one and practise:
+
+- **Add it up**: why the items make the total. A big order is grouped, so "10 muffins and a coffee" is two questions ("$2.50 each × 10", then adding the coffee), not ten.
+- **Make change**: what the customer gave, what it cost, and the change. The database does not store the cash handed over, so it is worked out from the total (the next bill up). Card sales say "Pretend they gave", because no cash changed hands.
+
+Like Khan Academy: wrong answers grey out, up to three hints, a short "why" after the right answer, and a star for a clean run (kept in the browser, `learn-progress-v1`).
+
+Gemini only words the hints and the "why" (`POST /api/learn/hint`, `POST /api/learn/explain`). **Code decides what is right**: the rules and the three answer choices are in `src/lib/learn.ts`, the server rebuilds each question from the stored sale (the browser never sends prices or answers), and every Gemini sentence is checked so it cannot give the answer away (no answer digits or number words). If Gemini is slow, rate-limited or down, fixed wording from the same file is used with no error. The Learn routes only read from the database; they never write.
+
+Test it with `npx tsx src/lib/learn.test.ts` (1,900 generated questions plus hand-written cases). It also runs under `npm test`.
+
 ### Database (Tiger Data)
 
 1. Get the `DATABASE_URL` from the team lead (privately, never in git) and put it in `.env.local`.
@@ -46,24 +59,27 @@ Back-room stock (ingredients, packaging, supplies) is at `/api/supplies`; stock 
 
 ## Where things go
 
-| Path                                   | What                                                    |
-| -------------------------------------- | ------------------------------------------------------- |
-| `src/app/<screen>/page.tsx`            | Screens: `register`, `stock`, `money`                   |
-| `src/app/api/**/route.ts`              | One file per API route                                  |
-| `src/components/<area>/`               | UI pieces: `register`, `stock`, `money`, `voice`, `nav` |
-| `src/lib/types.ts`                     | **Shared contract.** Money is always whole cents        |
-| `src/lib/db.ts`                        | Tiger Data client (`query()`) — server only             |
-| `src/lib/mock-data.ts`                 | Fake data the API returns until the DB is wired         |
-| `src/lib/images.ts`                    | Menu picture URLs                                       |
-| `src/lib/speech.ts`                    | Read aloud (browser Web Speech API)                     |
-| `src/lib/explain.ts`                   | Simple-words explanations (local rules)                 |
-| `src/lib/metrics.ts`                   | Insight numbers, computed in code (never by the AI)     |
-| `src/lib/insights.ts`                  | Picks top 3 insights; Gemini wording + local fallback   |
-| `src/lib/integrations/gemini.ts`       | Gemini call (structured JSON)                           |
-| `src/styles/tokens.css`                | Colours, touch size, font sizes (Tailwind `@theme`)     |
-| `src/app/manifest.ts`, `public/icons/` | PWA manifest + icons                                    |
-| `db/schema.sql`                        | Database schema (`npm run db:schema`, needs `psql`)     |
-| `scripts/seed.ts`                      | Fake data seed (`npm run db:seed`)                      |
+| Path                                   | What                                                             |
+| -------------------------------------- | ---------------------------------------------------------------- |
+| `src/app/<screen>/page.tsx`            | Screens: `register`, `stock`, `money`, `learn`                   |
+| `src/app/api/**/route.ts`              | One file per API route                                           |
+| `src/components/<area>/`               | UI pieces: `register`, `stock`, `money`, `learn`, `voice`, `nav` |
+| `src/lib/types.ts`                     | **Shared contract.** Money is always whole cents                 |
+| `src/lib/db.ts`                        | Tiger Data client (`query()`) — server only                      |
+| `src/lib/mock-data.ts`                 | Fake data the API returns until the DB is wired                  |
+| `src/lib/images.ts`                    | Menu picture URLs (drawings in `public/images/menu/`)            |
+| `src/lib/speech.ts`                    | Words to say aloud + the browser-voice fallback                  |
+| `src/lib/elevenlabs.ts`                | ElevenLabs text-to-speech (server only)                          |
+| `src/lib/explain.ts`                   | Simple-words explanations (local rules)                          |
+| `src/lib/metrics.ts`                   | Insight numbers, computed in code (never by the AI)              |
+| `src/lib/insights.ts`                  | Picks top 3 insights; Gemini wording + local fallback            |
+| `src/lib/integrations/gemini.ts`       | Gemini calls (structured JSON): insights, Learn hints            |
+| `src/lib/learn.ts`                     | Learn rules: questions, answers, hints, checks                   |
+| `src/lib/learn-data.ts`                | Learn's read-only sales query (server only)                      |
+| `src/styles/tokens.css`                | Colours, touch size, font sizes (Tailwind `@theme`)              |
+| `src/app/manifest.ts`, `public/icons/` | PWA manifest + icons                                             |
+| `db/schema.sql`                        | Database schema (`npm run db:schema`, needs `psql`)              |
+| `scripts/seed.ts`                      | Fake data seed (`npm run db:seed`)                               |
 
 Tailwind 4 is configured in CSS, so there is no `tailwind.config.js`: tokens in `src/styles/tokens.css` become utilities such as `bg-sage`, `min-h-touch`, `text-number` and `rounded-tile`.
 
