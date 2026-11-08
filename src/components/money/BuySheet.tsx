@@ -81,8 +81,8 @@ export function BuySheet({
           <SpeakButton
             text={
               picked
-                ? `Bought ${picked.name}. ${qty} ${unitOf(qty, picked.packName)} for ${money(qty * picked.unitCostCents)}. Tap Save purchase to record.`
-                : "What did we buy? Tap an item to record buying it."
+                ? `${qty} ${unitOf(qty, picked.packName)} of ${picked.name} costs ${money(qty * picked.unitCostCents)}. Tap Save purchase.`
+                : "What did we buy? Tap its picture."
             }
             size="sm"
             label="Read buy instructions"

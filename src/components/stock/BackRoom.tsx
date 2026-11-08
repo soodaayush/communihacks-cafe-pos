@@ -36,8 +36,8 @@ function Tile({ item, onCount }: { item: InventoryItem; onCount: () => void }) {
         : `About ${daysLeft} ${daysLeft === 1 ? "day" : "days"} left`;
   const speechText =
     (forDrinks
-      ? `${item.name}, ${percent(item)}% full. ${formatAmount(item.stock, item.unit)} left. Used ${formatAmount(item.usedLast7Days, item.unit)} this week.`
-      : `${item.name}, ${Math.round(item.stock)} ${unitOf(item.stock, item.unit)} left in the back.`) +
+      ? `${item.name}. ${percent(item)} percent full, ${formatAmount(item.stock, item.unit)} left. This week drinks used ${formatAmount(item.usedLast7Days, item.unit)}.`
+      : `${item.name}. ${Math.round(item.stock)} ${unitOf(item.stock, item.unit)} left in the back.`) +
     (lasts ? ` ${lasts}.` : "");
 
   return (

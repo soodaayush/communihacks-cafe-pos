@@ -8,7 +8,7 @@ import { setPinAsker } from "@/lib/staff-client";
 
 const MIN_DIGITS = 4;
 const MAX_DIGITS = 8;
-const QUESTION = "Staff only. A staff member types the PIN to save this change.";
+const QUESTION = "Staff only. Ask a staff member to type the PIN, then tap the check mark.";
 
 /**
  * The staff PIN pad. Mounted once in the layout; it opens only when a save is refused for a missing

@@ -35,7 +35,7 @@ export function SizePicker({ item, onPick, onClose }: SizePickerProps) {
         <div className="flex items-center gap-3">
           <h2 className="text-3xl font-bold">{item.name}</h2>
           <SpeakButton
-            text={`Choose a size for ${item.name}: Small, Medium, or Large.`}
+            text={`Which size of ${item.name}? Small, medium or large. Tap one.`}
             size="md"
             label={`Hear size instructions for ${item.name}`}
           />
@@ -78,7 +78,7 @@ export function SizePicker({ item, onPick, onClose }: SizePickerProps) {
               </button>
               <div className="mt-2">
                 <SpeakButton
-                  text={`${label} ${item.name}, ${formatCents(price)}`}
+                  text={`${label} ${item.name}. ${formatCents(price)}.`}
                   size="sm"
                   label={`Listen to ${label} price`}
                 />

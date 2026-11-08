@@ -35,7 +35,7 @@ export function BusyHours() {
   const to = Math.max(...open.map((h) => h.hour));
   const shown = hours.filter((h) => h.hour >= from && h.hour <= to);
   const busiest = shown.reduce((a, b) => (b.saleCount > a.saleCount ? b : a));
-  const speechSummary = `Busy hours: over the last 2 weeks, our busiest time of day was ${label(busiest.hour)} with ${busiest.saleCount} sales.`;
+  const speechSummary = `Busy hours. In the last 2 weeks, the busiest time was ${label(busiest.hour)}, with ${busiest.saleCount} sales. Be ready then.`;
 
   return (
     <section

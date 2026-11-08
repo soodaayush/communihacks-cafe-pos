@@ -16,13 +16,11 @@ export function PaidVsBought({ days }: { days: DayFlow[] }) {
   const pct = (c: number) => `${(Math.max(c, 0) / max) * 100}%`;
 
   const speechSummary =
-    `Daily comparison for the last ${ordered.length} days. Green shows money customers paid. Pink shows money spent buying stock. ` +
-    ordered
-      .map(
-        (d) =>
-          `${d.date === today ? "Today" : WEEKDAY[weekday(d.date)]}: paid ${formatDollars(d.inCents)}, bought ${formatDollars(d.boughtCents)}.`,
-      )
-      .join(" ");
+    `The last ${ordered.length} days. Green is what customers paid. Pink is what we spent buying stock. ` +
+    `Together, customers paid ${formatDollars(ordered.reduce((s, d) => s + d.inCents, 0))} and we spent ${formatDollars(ordered.reduce((s, d) => s + d.boughtCents, 0))}.` +
+    (ordered.at(-1)?.date === today && ordered.length
+      ? ` Today, customers paid ${formatDollars(ordered.at(-1)!.inCents)}.`
+      : "");
 
   return (
     <section className="flex flex-col gap-3 rounded-tile bg-white p-5 ring-1 ring-ink/10">

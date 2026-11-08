@@ -87,7 +87,7 @@ export function CountSheet({
             </div>
           </div>
           <SpeakButton
-            text={`Counting ${name}. ${question}. Current count is ${count} ${unit}.`}
+            text={`${name}. ${question} Right now it says ${count} ${unit}. Use minus and plus, or type the number. Then tap Save.`}
             size="md"
             label="Read count instructions"
           />
