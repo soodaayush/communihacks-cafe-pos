@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSoundsOn } from "@/lib/sounds";
 import { speak, stopSpeaking, type SpeakState } from "@/lib/speech";
 
 export interface SpeakButtonProps {
@@ -30,6 +31,8 @@ export function SpeakButton({
   className = "",
 }: SpeakButtonProps) {
   const [state, setState] = useState<SpeakState>("idle");
+  // The speaker switch in the nav bar: when the voice is off, no speaker buttons anywhere.
+  if (!useSoundsOn()) return null;
   return (
     <button
       type="button"

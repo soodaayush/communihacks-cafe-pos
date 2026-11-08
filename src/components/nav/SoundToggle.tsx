@@ -2,8 +2,12 @@
 
 import { Icon } from "@/components/icons/Icon";
 import { playSound, setSoundsOn, useSoundsOn } from "@/lib/sounds";
+import { stopSpeaking } from "@/lib/speech";
 
-/** Turns the app's little sound effects on or off. Remembered on this device. */
+/**
+ * One switch for everything you hear: the read-aloud voice (every speaker button on the site shows or
+ * hides with it) and the little button sounds. Remembered on this device.
+ */
 export function SoundToggle() {
   const on = useSoundsOn();
   return (
@@ -11,11 +15,14 @@ export function SoundToggle() {
       type="button"
       aria-pressed={on}
       aria-label={
-        on ? "Sounds are on. Tap to turn them off." : "Sounds are off. Tap to turn them on."
+        on
+          ? "Voice and sounds are on. Tap to turn them off."
+          : "Voice and sounds are off. Tap to turn them on."
       }
-      title={on ? "Sounds on" : "Sounds off"}
+      title={on ? "Voice on" : "Voice off"}
       data-sound="none"
       onClick={() => {
+        if (on) stopSpeaking();
         setSoundsOn(!on);
         if (!on) setTimeout(() => playSound("success"), 50); // a little hello when turned on
       }}
