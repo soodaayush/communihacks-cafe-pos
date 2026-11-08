@@ -4,7 +4,7 @@ import Image from "next/image";
 import { BusyDays } from "@/components/stock/BusyDays";
 import { BusyHours } from "@/components/stock/BusyHours";
 import { SpeakButton } from "@/components/voice/SpeakButton";
-import { imageUrl } from "@/lib/integrations/cloudinary";
+import { imageUrl } from "@/lib/images";
 import type { MenuItem, TrendPoint } from "@/lib/types";
 
 // Everything about what sells and when, in three simple pictures:
@@ -54,7 +54,7 @@ function BestSellers({ menu, trends }: { menu: MenuItem[]; trends: TrendPoint[] 
             title={`${item.name}: ${qty} sold`}
           >
             <Image
-              src={imageUrl(item.imagePublicId, 96)}
+              src={imageUrl(item.imagePublicId)}
               alt=""
               width={40}
               height={40}

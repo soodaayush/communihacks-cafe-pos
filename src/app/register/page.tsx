@@ -6,6 +6,7 @@ import { OrderTray } from "@/components/register/OrderTray";
 import { PaymentChoice } from "@/components/register/PaymentChoice";
 import { SizePicker } from "@/components/register/SizePicker";
 import { hasSizes, sizePriceCents } from "@/lib/sizes";
+import { sendSale } from "@/lib/offline-sales";
 import { playSound } from "@/lib/sounds";
 import type { DrinkSize, MenuItem, PaymentMethod, SaleItem } from "@/lib/types";
 
@@ -75,28 +76,27 @@ export default function RegisterPage() {
     );
   }
 
-  async function recordSale(paymentMethod: PaymentMethod) {
-    const res = await fetch("/api/sales", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ paymentMethod, totalCents, items: order }),
-    }).catch(() => null);
-    if (!res) {
-      playSound("error");
-      throw new Error("Sale not saved: no connection");
-    }
-    if (res.status === 404) {
+  async function recordSale(paymentMethod: PaymentMethod): Promise<"saved" | "offline"> {
+    // clientRef + soldAt: if the Wi-Fi is down the sale waits on this tablet and is sent later,
+    // at its real time, and counted once even if it is sent twice (lib/offline-sales.ts).
+    const result = await sendSale({
+      clientRef: crypto.randomUUID(),
+      soldAt: new Date().toISOString(),
+      paymentMethod,
+      items: order.map(({ menuItemId, size, qty }) => ({ menuItemId, size, qty })),
+    });
+    if (result === 404) {
       // The menu changed under this page (the database was reset, so the items have new ids).
-      // Reload to get the current menu; the order has to be taken again.
       window.location.reload();
     }
-    if (!res.ok) {
+    if (typeof result === "number") {
       playSound("error");
-      throw new Error(`Sale not saved: ${res.status}`);
+      throw new Error(`Sale not saved: ${result}`);
     }
     playSound("sale");
     // The server lowers the stock too (DB or mock shelf); this just updates the tiles without a reload.
     setMenu((m) => m && m.map((it) => ({ ...it, stock: it.stock - qtyOf(it.id) })));
+    return result;
   }
 
   if (!menu) {
@@ -124,10 +124,10 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 lg:grid lg:h-full lg:grid-cols-[1fr_minmax(22rem,26rem)]">
+    <div className="flex flex-col gap-6 md:grid md:h-full md:grid-cols-[minmax(0,1fr)_minmax(18rem,20rem)] md:gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,24rem)] lg:gap-6">
       <section
         aria-label="Menu"
-        className="grid auto-rows-max content-start gap-4 sm:grid-cols-2 lg:overflow-y-auto lg:pr-1 xl:grid-cols-4"
+        className="grid auto-rows-max grid-cols-2 content-start gap-4 md:overflow-y-auto md:pr-1 lg:grid-cols-3 2xl:grid-cols-4"
       >
         {menu.map((item) => (
           <ItemTile

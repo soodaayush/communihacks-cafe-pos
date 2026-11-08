@@ -75,6 +75,28 @@ const ICONS = {
     </>
   ),
   cross: <path d="M13 13l22 22M35 13L13 35" strokeWidth={4.5} />,
+  lock: (
+    <>
+      <path d="M15 21v-6a9 9 0 0 1 18 0v6" />
+      <rect x="9" y="21" width="30" height="21" rx="4" fill={BUTTER} />
+      <path d="M24 29v6" strokeWidth={3.5} />
+    </>
+  ),
+  backspace: (
+    <>
+      <path d="M17 10h23a3 3 0 0 1 3 3v22a3 3 0 0 1-3 3H17L5 24z" fill={WHITE} />
+      <path d="M22 18l12 12M34 18L22 30" />
+    </>
+  ),
+  cloud: (
+    <>
+      <path
+        d="M14 38a9 9 0 0 1-1.5-17.9A12 12 0 0 1 35.5 18 10 10 0 0 1 35 38z"
+        fill={SKY}
+      />
+      <path d="M19 28l4 4 7-8" />
+    </>
+  ),
   star: (
     <path
       d="M24 5l5.5 11.6 12.5 1.6-9.2 8.7 2.3 12.5L24 33.4l-11.1 6 2.3-12.5L6 18.2l12.5-1.6z"

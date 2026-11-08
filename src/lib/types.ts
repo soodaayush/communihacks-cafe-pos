@@ -32,6 +32,7 @@ export interface InventoryItem {
   packSize: number; // `unit`s in one pack: 1 bag of beans = 1000 g
   fullQty: number | null; // a full container, for "% full"; null = just a count
   usedLast7Days: number; // taken out for drinks in the last 7 days, in `unit`
+  daysLeft: number | null; // how long it lasts at the last 7 days' pace; null = not used lately
 }
 
 export interface StockMovement {
@@ -165,12 +166,4 @@ export interface InsightsResponse {
   source: "gemini" | "local";
   insights: Insight[];
   metrics: Metric[];
-}
-
-export interface ImageSignResponse {
-  cloudName: string;
-  apiKey: string;
-  timestamp: number;
-  signature: string;
-  folder: string;
 }

@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
-import { ELEVENLABS_BASE as BASE, perMinuteLimit } from "@/lib/elevenlabs";
+import { ELEVENLABS_BASE as BASE } from "@/lib/elevenlabs";
+import { perMinuteLimit } from "@/lib/rate-limit";
 import { speakableText } from "@/lib/speech";
 import type { SpeakRequest, SpeakResponse } from "@/lib/types";
 

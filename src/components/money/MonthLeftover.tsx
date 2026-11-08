@@ -1,4 +1,5 @@
 import { dollars, monthName, type BudgetMonth } from "@/lib/budget";
+import { StartBalanceButton } from "./StartBalanceButton";
 
 // The app's money meanings: green = came in, rose = went out.
 const IN = "#93c6a3";
@@ -65,7 +66,10 @@ export function MonthLeftover({ months }: { months: BudgetMonth[] }) {
       <div className="flex items-center justify-around gap-3 rounded-2xl bg-cream p-4 text-center">
         <div>
           <p className="text-lg text-ink-soft">Start of {name}</p>
-          <p className="text-number font-bold tabular-nums">{dollars(start)}</p>
+          <p className="flex items-center justify-center gap-2">
+            <span className="text-number font-bold tabular-nums">{dollars(start)}</span>
+            <StartBalanceButton month={now.month} monthLabel={name} cents={start} />
+          </p>
         </div>
         <span aria-hidden className="text-4xl text-ink-soft">
           →

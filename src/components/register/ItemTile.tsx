@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { SpeakButton } from "@/components/voice/SpeakButton";
-import { imageUrl } from "@/lib/integrations/cloudinary";
+import { imageUrl } from "@/lib/images";
 import { formatCents } from "@/lib/money";
 import { hasSizes } from "@/lib/sizes";
 import type { MenuItem } from "@/lib/types";

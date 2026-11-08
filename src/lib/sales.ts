@@ -1,47 +1,66 @@
-import { HttpError } from "./api";
 import { withTransaction } from "./db";
-import { hasSizes, sizePriceCents } from "./sizes";
-import type { DrinkSize, PaymentMethod, Sale, SaleItem } from "./types";
+import {
+  priceSale,
+  takeFromStock,
+  type MenuRow,
+  type RecipeRow,
+  type SaleInput,
+} from "./sale-math";
+import type { DrinkSize, Sale, SaleItem } from "./types";
 
-/** One order line, already validated (uuid id, whole qty above 0, size S/M/L if given). */
-export interface SaleLine {
-  menuItemId: string;
-  size?: DrinkSize;
-  qty: number;
-}
+export type { SaleLine } from "./sale-math";
 
 /**
  * Records one sale in a single transaction, so the money and the stock always agree:
- *   - a sales row and its sale_items rows (prices from menu_items + the drink size, never the caller)
+ *   - a sales row and its sale_items rows (prices from the menu + the drink size, see sale-math.ts)
  *   - food comes off the shelf (menu_items.stock)
  *   - drinks are made from the back room: their recipe for that size (recipes table) is subtracted
  *     from inventory_items and written to the stock_movements ledger as "use"
- * A drink's cost is what its ingredients cost (pack price / pack size x amount used), so profit
- * follows the real ingredients. Stock never goes below 0. A drink with no size is a small.
+ * The sale's time is kept to the millisecond: its items point back to it by (id, time), and a
+ * JavaScript date only has milliseconds, so a finer time would never match.
+ * A sale with a clientRef that was already recorded is not recorded again (a retry after the
+ * Wi-Fi came back); the first one is returned.
  */
-export function createSale(paymentMethod: PaymentMethod, lines: SaleLine[]): Promise<Sale> {
+export function createSale({ paymentMethod, lines, clientRef, soldAt }: SaleInput): Promise<Sale> {
   const ids = [...new Set(lines.map((l) => l.menuItemId))];
   return withTransaction<Sale>(async (client) => {
-    const menu = await client.query<{
-      id: string;
-      category: string;
-      price_cents: number;
-      cost_cents: number;
-    }>(
+    if (clientRef) {
+      // One retry at a time per sale, then look for it.
+      await client.query(`SELECT pg_advisory_xact_lock(hashtext($1))`, [clientRef]);
+      const done = await client.query<{
+        id: string;
+        created_at: Date;
+        payment_method: string;
+        total_cents: number;
+      }>(
+        `SELECT id, created_at, payment_method, total_cents FROM sales
+          WHERE client_ref = $1 AND created_at > now() - interval '7 days' LIMIT 1`,
+        [clientRef],
+      );
+      if (done.rows[0]) {
+        const s = done.rows[0];
+        const items = await client.query<SaleItem & { size: DrinkSize | null }>(
+          `SELECT menu_item_id AS "menuItemId", size, qty, unit_price_cents AS "unitPriceCents",
+                  unit_cost_cents AS "unitCostCents"
+             FROM sale_items WHERE sale_id = $1 AND sale_created_at = $2`,
+          [s.id, s.created_at],
+        );
+        return {
+          id: s.id,
+          createdAt: s.created_at.toISOString(),
+          paymentMethod: s.payment_method as Sale["paymentMethod"],
+          totalCents: s.total_cents,
+          items: items.rows.map(({ size, ...i }) => ({ ...i, ...(size && { size }) })),
+        };
+      }
+    }
+
+    const menu = await client.query<MenuRow>(
       `SELECT id, category, price_cents, cost_cents FROM menu_items WHERE id = ANY($1::uuid[]) FOR UPDATE`,
       [ids],
     );
-    if (menu.rows.length !== ids.length) throw new HttpError("Unknown menuItemId", 404);
-    const byId = new Map(menu.rows.map((p) => [p.id, p]));
-
     // Every recipe line for the drinks in this order, with what that ingredient costs per unit.
-    const recipes = await client.query<{
-      menu_item_id: string;
-      size: DrinkSize;
-      inventory_item_id: string;
-      qty: number;
-      unit_cost: number;
-    }>(
+    const recipes = await client.query<RecipeRow>(
       `SELECT r.menu_item_id, r.size, r.inventory_item_id, r.qty::float8 AS qty,
               (i.unit_cost_cents / i.pack_size)::float8 AS unit_cost
          FROM recipes r
@@ -49,28 +68,13 @@ export function createSale(paymentMethod: PaymentMethod, lines: SaleLine[]): Pro
         WHERE r.menu_item_id = ANY($1::uuid[])`,
       [ids],
     );
-    const recipeOf = (menuItemId: string, size: DrinkSize) =>
-      recipes.rows.filter((r) => r.menu_item_id === menuItemId && r.size === size);
-
-    const items: SaleItem[] = lines.map((l) => {
-      const p = byId.get(l.menuItemId)!;
-      if (l.size && !hasSizes(p.category)) throw new HttpError("Only drinks come in sizes");
-      const size = hasSizes(p.category) ? (l.size ?? "S") : undefined;
-      const recipe = size ? recipeOf(p.id, size) : [];
-      const ingredientCost = recipe.reduce((sum, r) => sum + r.qty * r.unit_cost, 0);
-      return {
-        menuItemId: p.id,
-        ...(size && { size }),
-        qty: l.qty,
-        unitPriceCents: sizePriceCents(p.price_cents, size),
-        unitCostCents: recipe.length ? Math.round(ingredientCost) : p.cost_cents,
-      };
-    });
-    const totalCents = items.reduce((sum, i) => sum + i.qty * i.unitPriceCents, 0);
+    const { items, totalCents, shelf, used } = priceSale(lines, menu.rows, recipes.rows);
 
     const sale = await client.query<{ id: string; created_at: Date }>(
-      `INSERT INTO sales (payment_method, total_cents) VALUES ($1, $2) RETURNING id, created_at`,
-      [paymentMethod, totalCents],
+      `INSERT INTO sales (payment_method, total_cents, client_ref, created_at)
+       VALUES ($1, $2, $3, date_trunc('milliseconds', coalesce($4::timestamptz, now())))
+       RETURNING id, created_at`,
+      [paymentMethod, totalCents, clientRef ?? null, soldAt?.toISOString() ?? null],
     );
     const { id, created_at } = sale.rows[0];
 
@@ -89,10 +93,6 @@ export function createSale(paymentMethod: PaymentMethod, lines: SaleLine[]): Pro
     );
 
     // Food: take it off the shelf.
-    const shelf = new Map<string, number>();
-    for (const i of items) {
-      if (!i.size) shelf.set(i.menuItemId, (shelf.get(i.menuItemId) ?? 0) + i.qty);
-    }
     if (shelf.size) {
       await client.query(
         `UPDATE menu_items m SET stock = GREATEST(m.stock - s.qty, 0)
@@ -102,22 +102,12 @@ export function createSale(paymentMethod: PaymentMethod, lines: SaleLine[]): Pro
     }
 
     // Drinks: take their ingredients out of the back room and log it in the ledger.
-    const used = new Map<string, number>();
-    for (const i of items) {
-      if (!i.size) continue;
-      for (const r of recipeOf(i.menuItemId, i.size)) {
-        used.set(r.inventory_item_id, (used.get(r.inventory_item_id) ?? 0) + i.qty * r.qty);
-      }
-    }
     if (used.size) {
       const current = await client.query<{ id: string; stock: number }>(
         `SELECT id, stock::float8 AS stock FROM inventory_items WHERE id = ANY($1::uuid[]) FOR UPDATE`,
         [[...used.keys()]],
       );
-      // Never below zero: log only what was really there to take.
-      const taken = current.rows
-        .map((row) => ({ id: row.id, amount: Math.min(row.stock, used.get(row.id) ?? 0) }))
-        .filter((t) => t.amount > 0);
+      const taken = takeFromStock(current.rows, used);
       if (taken.length) {
         await client.query(
           `UPDATE inventory_items i SET stock = i.stock - t.amount
