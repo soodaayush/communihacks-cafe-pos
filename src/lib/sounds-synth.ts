@@ -27,7 +27,7 @@ export function createOutput(ctx: BaseAudioContext): GainNode {
   return master;
 }
 
-export type SoundName = "add" | "remove" | "tap" | "success" | "sale" | "error" | "mute";
+export type SoundName = "add" | "remove" | "tap" | "success" | "sale" | "error" | "mute" | "unmute";
 export const SOUND_NAMES: SoundName[] = [
   "add",
   "remove",
@@ -46,6 +46,8 @@ interface Note {
   seconds: number;
   peak: number;
   type?: OscillatorType;
+  /** Fade-in time in seconds (default 6 ms). Longer = rounder, no click. */
+  attack?: number;
 }
 
 /** One soft note: fades in over 6 ms, then fades out smoothly. */
@@ -57,7 +59,7 @@ function note(ctx: BaseAudioContext, out: AudioNode, n: Note, pitch: number) {
   if (n.toFreq)
     osc.frequency.exponentialRampToValueAtTime(n.toFreq * pitch, n.at + n.seconds * 0.8);
   gain.gain.setValueAtTime(0.0001, n.at);
-  gain.gain.exponentialRampToValueAtTime(n.peak, n.at + 0.006);
+  gain.gain.exponentialRampToValueAtTime(n.peak, n.at + (n.attack ?? 0.006));
   gain.gain.exponentialRampToValueAtTime(0.0001, n.at + n.seconds);
   osc.connect(gain).connect(out);
   osc.start(n.at);
@@ -127,12 +129,22 @@ export function scheduleSound(
       note(ctx, out, { at, freq: 659.25, seconds: 0.2, peak: 0.14 }, pitch);
       note(ctx, out, { at: at + 0.09, freq: 987.77, seconds: 0.3, peak: 0.14 }, pitch);
       break;
-    case "mute": // "success" in reverse, softer: two notes settling down to quiet
-      note(ctx, out, { at, freq: 987.77, seconds: 0.16, peak: 0.1 }, pitch);
+    // The voice switch: a matched pair, low and quiet with a soft fade-in, like a light dimming.
+    case "unmute": // a gentle bloom up
+      note(ctx, out, { at, freq: 392, seconds: 0.28, peak: 0.07, attack: 0.03 }, pitch);
       note(
         ctx,
         out,
-        { at: at + 0.1, freq: 587.33, toFreq: 523.25, seconds: 0.32, peak: 0.09 },
+        { at: at + 0.08, freq: 587.33, seconds: 0.4, peak: 0.06, attack: 0.04 },
+        pitch,
+      );
+      break;
+    case "mute": // the same notes, settling down
+      note(ctx, out, { at, freq: 587.33, seconds: 0.26, peak: 0.06, attack: 0.03 }, pitch);
+      note(
+        ctx,
+        out,
+        { at: at + 0.08, freq: 392, toFreq: 370, seconds: 0.4, peak: 0.055, attack: 0.04 },
         pitch,
       );
       break;
@@ -161,5 +173,6 @@ export const SOUND_SECONDS: Record<SoundName, number> = {
   success: 0.41,
   sale: 0.9,
   error: 0.4,
-  mute: 0.42,
+  mute: 0.5,
+  unmute: 0.5,
 };

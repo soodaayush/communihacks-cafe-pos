@@ -27,7 +27,7 @@ export function SoundToggle() {
           playSound("mute"); // played while sounds are still on
         }
         setSoundsOn(!on);
-        if (!on) setTimeout(() => playSound("success"), 50); // a little hello when turned on
+        if (!on) setTimeout(() => playSound("unmute"), 50); // a soft hello when turned on
       }}
       className={`flex size-touch shrink-0 items-center justify-center self-center rounded-full transition-colors ${on ? "bg-sage/60 text-ink" : "bg-ink/5 text-ink-soft"}`}
     >
