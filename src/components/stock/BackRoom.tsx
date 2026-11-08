@@ -9,6 +9,7 @@ import { StockLevel } from "@/components/stock/StockLevel";
 import { SpeakButton } from "@/components/voice/SpeakButton";
 import type { InventoryItem } from "@/lib/types";
 import { formatAmount, isMeasured, unitOf } from "@/lib/units";
+import { playSound } from "@/lib/sounds";
 
 // "In the back" (Tiger Data: inventory_items + the stock_movements ledger), in two parts:
 //   For drinks:      what drinks are made from (beans, tea leaves, milk, lemonade, oranges). Every
@@ -107,6 +108,7 @@ export function BackRoom() {
     const updated: InventoryItem = await res.json();
     setItems((list) => list?.map((i) => (i.id === updated.id ? updated : i)) ?? list);
     setCounting(null);
+    playSound("success");
     setNotice(`Saved: ${item.name} ${formatAmount(count, item.unit)}`);
     setTimeout(() => setNotice(null), 4000);
   }

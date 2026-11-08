@@ -5,7 +5,9 @@ import { ItemTile } from "@/components/register/ItemTile";
 import { OrderTray } from "@/components/register/OrderTray";
 import { PaymentChoice } from "@/components/register/PaymentChoice";
 import { SizePicker } from "@/components/register/SizePicker";
+import { VoiceOrder, type VoiceLine } from "@/components/register/VoiceOrder";
 import { hasSizes, sizePriceCents } from "@/lib/sizes";
+import { playSound } from "@/lib/sounds";
 import type { DrinkSize, MenuItem, PaymentMethod, SaleItem } from "@/lib/types";
 
 // The open order survives switching tabs (and a refresh) by living in this browser tab's sessionStorage.
@@ -52,7 +54,8 @@ export default function RegisterPage() {
   const isLine = (l: SaleItem, id: string, size?: DrinkSize) =>
     l.menuItemId === id && l.size === size;
 
-  function add(item: MenuItem, size?: DrinkSize) {
+  function add(item: MenuItem, size?: DrinkSize, quiet = false) {
+    if (!quiet) playSound("add");
     setOrder((o) =>
       o.some((l) => isLine(l, item.id, size))
         ? o.map((l) => (isLine(l, item.id, size) ? { ...l, qty: l.qty + 1 } : l))
@@ -69,9 +72,15 @@ export default function RegisterPage() {
     );
   }
   function removeOne(id: string, size?: DrinkSize) {
+    playSound("remove");
     setOrder((o) =>
       o.map((l) => (isLine(l, id, size) ? { ...l, qty: l.qty - 1 } : l)).filter((l) => l.qty > 0),
     );
+  }
+
+  // What the cashier said and confirmed: add each line (without a tap sound for every cup).
+  function addByVoice(lines: VoiceLine[]) {
+    for (const l of lines) for (let i = 0; i < l.qty; i++) add(l.item, l.size, true);
   }
 
   async function recordSale(paymentMethod: PaymentMethod) {
@@ -79,13 +88,21 @@ export default function RegisterPage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ paymentMethod, totalCents, items: order }),
-    });
+    }).catch(() => null);
+    if (!res) {
+      playSound("error");
+      throw new Error("Sale not saved: no connection");
+    }
     if (res.status === 404) {
       // The menu changed under this page (the database was reset, so the items have new ids).
       // Reload to get the current menu; the order has to be taken again.
       window.location.reload();
     }
-    if (!res.ok) throw new Error(`Sale not saved: ${res.status}`);
+    if (!res.ok) {
+      playSound("error");
+      throw new Error(`Sale not saved: ${res.status}`);
+    }
+    playSound("sale");
     // The server lowers the stock too (DB or mock shelf); this just updates the tiles without a reload.
     setMenu((m) => m && m.map((it) => ({ ...it, stock: it.stock - qtyOf(it.id) })));
   }
@@ -141,6 +158,7 @@ export default function RegisterPage() {
         onRemove={removeOne}
         onClear={() => setOrder([])}
         onPay={() => setPaying(true)}
+        extraAction={<VoiceOrder menu={menu} qtyInTray={qtyOf} onConfirm={addByVoice} />}
       />
 
       {sizing && (

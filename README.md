@@ -22,6 +22,13 @@ Every speaker button reads its text aloud through `POST /api/speak`, which calls
 
 To save credits, a sentence is generated once and reused (server cache, plus the page remembers what it already fetched), a sentence can be at most 1000 characters, and at most 60 new sentences are sent per minute (`ELEVENLABS_MAX_PER_MINUTE`). Tap a speaker again to stop it.
 
+### Voice ordering and sound effects (ElevenLabs)
+
+These two use the same `ELEVENLABS_API_KEY`, but the key must be allowed to use **Speech to Text** and **Sound Effects** as well as Text to Speech (ElevenLabs dashboard, API Keys, edit the key). The key never leaves the server.
+
+- **Voice ordering.** On the Register, tap the microphone next to "Order", say the order ("two large coffees and a muffin") and tap Done. ElevenLabs Scribe turns the recording into text (`POST /api/transcribe`), `src/lib/voice-order.ts` turns the text into order lines (sizes, quantities, menu names and near-misses; run `npx tsx src/lib/voice-order.test.ts`), and the app reads the order back before anything is added. Items that are sold out or short are clipped to what is left. The microphone needs https or localhost; without a key the screen says voice ordering is not set up, and tapping the pictures always works. Optional: `ELEVENLABS_STT_LANGUAGE` (default `en`), `ELEVENLABS_STT_MAX_PER_MINUTE` (default 30).
+- **Sound effects.** A soft pop when you add an item, a cash register when a sale saves, a chime when something is counted or heard, a gentle tone on an error. They are made once with ElevenLabs Sound Effects and saved in `public/sounds`, so playing them costs nothing and teammates do not need the key: run `npm run sounds` (skips files that exist; `-- --force` makes them again). The speaker button in the nav bar turns them off, and the choice is remembered on that device.
+
 ### Database (Tiger Data)
 
 1. Get the `DATABASE_URL` from the team lead (privately, never in git) and put it in `.env.local`.
