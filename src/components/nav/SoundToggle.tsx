@@ -19,7 +19,7 @@ export function SoundToggle() {
         setSoundsOn(!on);
         if (!on) setTimeout(() => playSound("success"), 50); // a little hello when turned on
       }}
-      className={`flex size-touch shrink-0 items-center justify-center self-center rounded-full ring-1 ring-ink/15 ${on ? "bg-white" : "bg-white/40 text-ink-soft"}`}
+      className={`flex size-touch shrink-0 items-center justify-center self-center rounded-full transition-colors ${on ? "bg-sage/60 text-ink" : "bg-ink/5 text-ink-soft"}`}
     >
       <Icon name={on ? "volume" : "volumeOff"} className="size-8" />
     </button>

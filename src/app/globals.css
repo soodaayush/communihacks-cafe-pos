@@ -2,7 +2,12 @@
 @import "../styles/tokens.css";
 
 body {
-  background: var(--color-cream);
+  background:
+    radial-gradient(60rem 40rem at 0% 0%, rgb(220 212 238 / 0.35), transparent 70%),
+    radial-gradient(50rem 36rem at 100% 100%, rgb(188 217 196 / 0.3), transparent 70%),
+    var(--color-cream);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   color: var(--color-ink);
   font-family:
     system-ui,
@@ -14,8 +19,42 @@ body {
 }
 
 :focus-visible {
-  outline: 3px solid var(--color-ink);
+  outline: 3px solid var(--color-lavender-dark);
   outline-offset: 3px;
+  border-radius: 0.75rem;
+}
+
+/* Cards and tiles: a soft warm shadow under the faint outline, everywhere, from one place.
+   (Tailwind 4 builds box-shadow from these variables, so the ring stays.) */
+.bg-white:is(.rounded-tile, .rounded-2xl, [class*="rounded-[2rem]"]) {
+  --tw-shadow: var(--shadow-card);
+  --tw-ring-color: rgb(61 59 72 / 0.07);
+  background-color: var(--color-paper);
+}
+button.bg-white,
+button.bg-cream,
+a.bg-white {
+  transition:
+    box-shadow 160ms ease,
+    transform 160ms ease,
+    background-color 160ms ease;
+}
+@media (hover: hover) {
+  button.bg-white.rounded-tile:not(:disabled):hover {
+    --tw-shadow: var(--shadow-lift);
+  }
+}
+
+/* Calm motion: anyone who asks for less gets none. */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+::selection {
+  background: var(--color-lavender);
 }
 
 button:not(:disabled) {

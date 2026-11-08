@@ -1,15 +1,22 @@
 /* Design tokens. Tailwind v4 reads @theme, so each token becomes a utility:
    bg-sage, text-ink, min-h-touch, min-w-touch, gap-gap, text-number, rounded-tile ... */
 @theme {
-  /* Calm pastel, muted palette */
-  --color-cream: #faf6ef;
-  --color-ink: #4a4a55;
-  --color-ink-soft: #8a8a96;
-  --color-sage: #b8d4c0;
-  --color-sky: #b9d3e6;
-  --color-blush: #f0c8c4;
-  --color-butter: #f3e3ad;
-  --color-lavender: #d4cbe8;
+  /* Calm pastel, muted palette. Ink and ink-soft pass WCAG AA on cream and white. */
+  --color-cream: #f8f4ec;
+  --color-paper: #fffdf9;
+  --color-ink: #3d3b48;
+  --color-ink-soft: #6e6c7a;
+  --color-sage: #bcd9c4;
+  --color-sage-dark: #5e8f6c;
+  --color-sky: #c3dcee;
+  --color-blush: #f3cdc8;
+  --color-butter: #f5e6b3;
+  --color-lavender: #dcd4ee;
+  --color-lavender-dark: #7a6aa8;
+
+  /* Soft, warm elevation instead of hard outlines */
+  --shadow-card: 0 1px 2px rgb(61 59 72 / 0.05), 0 6px 20px -8px rgb(61 59 72 / 0.14);
+  --shadow-lift: 0 2px 4px rgb(61 59 72 / 0.06), 0 14px 32px -12px rgb(61 59 72 / 0.22);
 
   /* Meaning (always paired with a picture, never colour alone) */
   --color-money-in: var(--color-sage);
