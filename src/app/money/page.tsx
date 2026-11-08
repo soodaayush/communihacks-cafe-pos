@@ -2,9 +2,10 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { InsightList } from "@/components/insights/InsightList";
 import { BillsCover } from "@/components/money/BillsCover";
+import { BillsDonut } from "@/components/money/BillsDonut";
 import { BoughtList } from "@/components/money/BoughtList";
-import { Budget } from "@/components/money/Budget";
 import { MoneyInHand } from "@/components/money/MoneyInHand";
+import { MonthLeftover } from "@/components/money/MonthLeftover";
 import { PaidVsBought } from "@/components/money/PaidVsBought";
 import { RANGE_LABEL, RangeTabs, type MoneyRange } from "@/components/money/RangeTabs";
 import { StaffBills } from "@/components/money/StaffBills";
@@ -13,23 +14,40 @@ import { getBought, getExpenses, getFlowByDay } from "@/lib/money-data";
 
 const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
 
-// Customers paid − we bought = in hand. Then each day side by side, and what we bought.
-// Below: this month's budget, starting from what last month left over.
-// Loaded on the server (no loading flash); the tip streams in.
+const GRID =
+  "grid gap-4 lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,30rem)] lg:content-start lg:gap-6 lg:overflow-y-auto lg:p-1";
+
+// Today / This week: customers paid − we bought = in hand, each day side by side, what we bought.
+// This month: the monthly picture as charts (leftover carried in, where the money went, covering
+// the bills). Loaded on the server (no loading flash); the tip streams in.
 export default async function MoneyPage({
   searchParams,
 }: {
   searchParams: Promise<{ range?: string }>;
 }) {
   const { range: raw } = await searchParams;
-  const range: MoneyRange = raw === "week" ? "week" : "day";
-  const days = range === "day" ? 1 : 7;
+  const range: MoneyRange = raw === "week" || raw === "month" ? raw : "day";
   await connection();
-  const [week, bought, expenses, budget] = await Promise.all([
+
+  if (range === "month") {
+    const months = await getBudgetMonths();
+    return (
+      <div className="flex flex-col gap-4 lg:h-full">
+        <RangeTabs range={range} />
+        <div className={GRID}>
+          <MonthLeftover months={months} />
+          <BillsDonut month={months.at(-1)} />
+          <BillsCover month={months.at(-1)} />
+        </div>
+      </div>
+    );
+  }
+
+  const days = range === "day" ? 1 : 7;
+  const [week, bought, expenses] = await Promise.all([
     getFlowByDay(7),
     getBought(days),
     getExpenses(days),
-    getBudgetMonths(),
   ]);
   const period = week.slice(0, days); // newest first: today is the first row
 
@@ -37,7 +55,7 @@ export default async function MoneyPage({
   return (
     <div className="flex flex-col gap-4 lg:h-full">
       <RangeTabs range={range} />
-      <div className="grid gap-4 lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,30rem)] lg:content-start lg:gap-6 lg:overflow-y-auto lg:p-1">
+      <div className={GRID}>
         <MoneyInHand
           label={RANGE_LABEL[range]}
           inCents={sum(period.map((d) => d.inCents))}
@@ -54,8 +72,6 @@ export default async function MoneyPage({
           </section>
           <StaffBills label={RANGE_LABEL[range]} expenses={expenses} />
         </div>
-        <Budget months={budget} />
-        <BillsCover month={budget.at(-1)} />
       </div>
     </div>
   );
