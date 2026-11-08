@@ -1,15 +1,16 @@
 import Link from "next/link";
 import { Icon, type IconName } from "@/components/icons/Icon";
 
-export type MoneyRange = "day" | "week";
+export type MoneyRange = "day" | "week" | "month";
 
 export const RANGE_LABEL: Record<MoneyRange, string> = {
   day: "Today",
   week: "This week",
+  month: "This month",
 };
-const ICON: Record<MoneyRange, IconName> = { day: "sun", week: "calendar" };
+const ICON: Record<MoneyRange, IconName> = { day: "sun", week: "calendar", month: "chart" };
 
-/** Today / This week as big tabs. Today comes first: the shift they just worked. */
+/** Today / This week / This month as big tabs. Today comes first: the shift they just worked. */
 export function RangeTabs({ range }: { range: MoneyRange }) {
   return (
     <nav aria-label="Time" className="flex shrink-0 gap-3">

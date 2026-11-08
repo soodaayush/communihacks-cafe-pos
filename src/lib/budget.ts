@@ -13,8 +13,21 @@ export const BILL_LABEL: Record<ExpenseType, string> = {
   other: "Other",
 };
 
+// One fixed colour per bill (never cycled): muted pastels to match the app. Checked with the
+// dataviz palette validator in the order rent, wages, other, stock: every neighbour is easy to tell
+// apart, colour-blind too. They are softer than its chroma floor and under 3:1 on white on purpose,
+// so every chart prints the amount next to each colour and never relies on colour alone.
+export const BILL_COLOR: Record<ExpenseType, string> = {
+  rent: "#7fa8d0",
+  salary: "#d9a957",
+  other: "#b59ad6",
+  inventory: "#7fb893",
+};
+
 export interface BudgetMonth {
   month: string; // YYYY-MM
+  /** Sales per day of the month: index 0 = the 1st. Feeds the "at this pace" line. */
+  dailyInCents: number[];
   openingCents: number; // carried over from the month before
   inCents: number; // sales
   outCents: number; // all bills, including buying stock
@@ -37,6 +50,7 @@ export function buildMonths(
     if (!m) {
       m = {
         month: key,
+        dailyInCents: [],
         openingCents: 0,
         inCents: 0,
         outCents: 0,
@@ -48,7 +62,12 @@ export function buildMonths(
     }
     return m;
   };
-  for (const d of days) monthOf(d.date).inCents += d.moneyInCents;
+  for (const d of days) {
+    const m = monthOf(d.date);
+    m.inCents += d.moneyInCents;
+    const i = Number(d.date.slice(8, 10)) - 1;
+    m.dailyInCents[i] = (m.dailyInCents[i] ?? 0) + d.moneyInCents;
+  }
   for (const e of expenses) {
     const m = monthOf(e.date);
     m.outCents += e.amountCents;
