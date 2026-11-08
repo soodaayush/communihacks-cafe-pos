@@ -1,6 +1,7 @@
 "use client";
 
-import { speak } from "@/lib/speech";
+import { useState } from "react";
+import { speak, stopSpeaking, type SpeakState } from "@/lib/speech";
 
 export interface SpeakButtonProps {
   text: string;
@@ -21,22 +22,26 @@ const ICON_SIZE_CLASSES = {
   lg: "size-8",
 };
 
-/** Reads `text` aloud with the browser's voice. */
+/** Reads `text` aloud (ElevenLabs voice; the browser's voice if that is not available). Tap again to stop. */
 export function SpeakButton({
   text,
   label = "Read out loud",
   size = "lg",
   className = "",
 }: SpeakButtonProps) {
+  const [state, setState] = useState<SpeakState>("idle");
   return (
     <button
       type="button"
       onClick={(e) => {
         e.stopPropagation();
-        speak(text);
+        if (state === "idle") speak(text, setState);
+        else stopSpeaking();
       }}
-      aria-label={label}
-      className={`flex shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-ink/10 transition-transform motion-safe:active:scale-95 ${SIZE_CLASSES[size]} ${className}`}
+      aria-label={state === "idle" ? label : "Stop reading"}
+      aria-pressed={state !== "idle"}
+      aria-busy={state === "loading"}
+      className={`flex shrink-0 items-center justify-center rounded-full ring-1 ring-ink/10 transition-transform motion-safe:active:scale-95 ${state === "idle" ? "bg-white" : "bg-sage"} ${state === "loading" ? "motion-safe:animate-pulse" : ""} ${SIZE_CLASSES[size]} ${className}`}
     >
       <svg
         aria-hidden
