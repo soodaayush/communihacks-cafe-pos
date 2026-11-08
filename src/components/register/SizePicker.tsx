@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useEffect, useRef } from "react";
 import { SpeakButton } from "@/components/voice/SpeakButton";
-import { imageUrl } from "@/lib/integrations/cloudinary";
+import { imageUrl } from "@/lib/images";
 import { formatCents } from "@/lib/money";
 import { SIZES, sizePriceCents } from "@/lib/sizes";
 import type { DrinkSize, MenuItem } from "@/lib/types";
@@ -55,7 +55,7 @@ export function SizePicker({ item, onPick, onClose }: SizePickerProps) {
           return (
             <div
               key={size}
-              className="relative flex flex-col items-center justify-end rounded-tile bg-white px-4 pt-5 pb-4 ring-1 ring-ink/10 shadow-sm"
+              className="relative flex flex-col items-center justify-end rounded-tile bg-white px-4 pt-5 pb-4 shadow-sm ring-1 ring-ink/10"
             >
               <button
                 type="button"
@@ -74,9 +74,7 @@ export function SizePicker({ item, onPick, onClose }: SizePickerProps) {
                   />
                 </span>
                 <span className="text-2xl font-bold">{label}</span>
-                <span className="text-number font-bold tabular-nums">
-                  {formatCents(price)}
-                </span>
+                <span className="text-number font-bold tabular-nums">{formatCents(price)}</span>
               </button>
               <div className="mt-2">
                 <SpeakButton

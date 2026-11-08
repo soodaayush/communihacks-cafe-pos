@@ -11,7 +11,7 @@ export interface PaymentChoiceProps {
   items: SaleItem[];
   totalCents: number;
   /** Saves the sale. Throws on failure so the cashier can try again. */
-  onPaid: (method: PaymentMethod) => Promise<void>;
+  onPaid: (method: PaymentMethod) => Promise<"saved" | "offline">;
   /** paid = true once the sale is saved: start a new order. */
   onClose: (paid: boolean) => void;
 }
@@ -148,6 +148,7 @@ export function PaymentChoice({ items, totalCents, onPaid, onClose }: PaymentCho
   const [cardStatus, setCardStatus] = useState<CardStatus>("waiting");
   const [method, setMethod] = useState<PaymentMethod>("cash");
   const [saving, setSaving] = useState(false);
+  const [offline, setOffline] = useState(false);
   const [failed, setFailed] = useState(false);
   const [givenBack, setGivenBack] = useState<number[]>([]);
   const [prevGot, setPrevGot] = useState<number>(0);
@@ -177,7 +178,7 @@ export function PaymentChoice({ items, totalCents, onPaid, onClose }: PaymentCho
     setSaving(true);
     setFailed(false);
     try {
-      await onPaid(m);
+      setOffline((await onPaid(m)) === "offline");
       setStep("done");
     } catch {
       setFailed(true);
@@ -444,7 +445,7 @@ export function PaymentChoice({ items, totalCents, onPaid, onClose }: PaymentCho
                           aria-label={`${denomLabel(d)} ${isDone ? "handed over" : "to hand over"}`}
                           className={`relative rounded-xl transition-all motion-safe:active:scale-95 ${
                             isDone
-                              ? "opacity-40 line-through ring-2 ring-sage"
+                              ? "line-through opacity-40 ring-2 ring-sage"
                               : "hover:ring-2 hover:ring-ink/20"
                           }`}
                         >
@@ -461,7 +462,7 @@ export function PaymentChoice({ items, totalCents, onPaid, onClose }: PaymentCho
                 </div>
 
                 {change > 0 && givenBack.length === changePieces.length && (
-                  <p className="mt-3 flex items-center gap-1.5 text-base font-bold text-sage-dark">
+                  <p className="text-sage-dark mt-3 flex items-center gap-1.5 text-base font-bold">
                     <Check className="size-5" /> All change handed over!
                   </p>
                 )}
@@ -547,6 +548,13 @@ export function PaymentChoice({ items, totalCents, onPaid, onClose }: PaymentCho
               label="Read sale completion summary"
             />
           </div>
+
+          {offline && (
+            <p role="status" className="max-w-xl rounded-tile bg-sky/50 p-4 text-xl">
+              No Wi-Fi right now. The sale is kept on this tablet and is sent by itself when the
+              Wi-Fi is back.
+            </p>
+          )}
 
           {/* Receipt-style summary: what came in, what went back, what the café keeps. */}
           <dl className="grid w-full max-w-xl grid-cols-[1fr_auto] gap-x-4 gap-y-3 rounded-tile bg-white p-6 text-left text-xl ring-1 ring-ink/10">

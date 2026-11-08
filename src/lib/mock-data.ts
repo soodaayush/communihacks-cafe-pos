@@ -115,6 +115,7 @@ export const mockSupplies: InventoryItem[] = [
     packSize: 1000,
     fullQty: 4000,
     usedLast7Days: 2400,
+    daysLeft: 5,
   },
   {
     id: "i3",
@@ -129,6 +130,7 @@ export const mockSupplies: InventoryItem[] = [
     packSize: 250,
     fullQty: 750,
     usedLast7Days: 210,
+    daysLeft: null,
   },
   {
     id: "i4",
@@ -143,6 +145,7 @@ export const mockSupplies: InventoryItem[] = [
     packSize: 1000,
     fullQty: 3000,
     usedLast7Days: 900,
+    daysLeft: null,
   },
   {
     id: "i5",
@@ -157,6 +160,7 @@ export const mockSupplies: InventoryItem[] = [
     packSize: 2000,
     fullQty: 24000,
     usedLast7Days: 14000,
+    daysLeft: null,
   },
   {
     id: "i6",
@@ -171,6 +175,7 @@ export const mockSupplies: InventoryItem[] = [
     packSize: 5000,
     fullQty: 28000,
     usedLast7Days: 9000,
+    daysLeft: null,
   },
   {
     id: "i7",
@@ -185,6 +190,7 @@ export const mockSupplies: InventoryItem[] = [
     packSize: 40,
     fullQty: 200,
     usedLast7Days: 70,
+    daysLeft: null,
   },
   {
     id: "i8",
@@ -199,6 +205,7 @@ export const mockSupplies: InventoryItem[] = [
     packSize: 500,
     fullQty: 1000,
     usedLast7Days: 420,
+    daysLeft: null,
   },
   {
     id: "i2",
@@ -213,6 +220,7 @@ export const mockSupplies: InventoryItem[] = [
     packSize: 50,
     fullQty: null,
     usedLast7Days: 260,
+    daysLeft: 4,
   },
   {
     id: "i9",
@@ -227,6 +235,7 @@ export const mockSupplies: InventoryItem[] = [
     packSize: 50,
     fullQty: null,
     usedLast7Days: 260,
+    daysLeft: 4,
   },
   {
     id: "i10",
@@ -241,6 +250,7 @@ export const mockSupplies: InventoryItem[] = [
     packSize: 1,
     fullQty: null,
     usedLast7Days: 8,
+    daysLeft: null,
   },
   {
     id: "i11",
@@ -255,6 +265,7 @@ export const mockSupplies: InventoryItem[] = [
     packSize: 1,
     fullQty: null,
     usedLast7Days: 21,
+    daysLeft: null,
   },
 ];
 

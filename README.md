@@ -2,7 +2,7 @@
 
 Picture-first café register (PWA) that teaches how money works. Built for CommuniHacks. All data is fake.
 
-Stack: Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · Tiger Data (Postgres + TimescaleDB) · Cloudinary · Gemini. Deploy target: Vultr.
+Stack: Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · Tiger Data (Postgres + TimescaleDB) · ElevenLabs · Gemini. Deploy target: Vultr.
 
 ## Run
 
@@ -10,7 +10,7 @@ Stack: Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · Ti
 npm install && npm run dev     # http://localhost:3000
 ```
 
-No env vars are needed to start: every API route returns mock data. Copy `.env.example` to `.env.local` to connect Tiger Data, Cloudinary and Gemini. Without `GEMINI_API_KEY`, insights use local wording.
+No env vars are needed to start: every API route returns mock data. Copy `.env.example` to `.env.local` to connect Tiger Data, ElevenLabs and Gemini. Without `GEMINI_API_KEY`, insights use local wording.
 
 ### Read aloud (ElevenLabs)
 
@@ -54,7 +54,7 @@ Back-room stock (ingredients, packaging, supplies) is at `/api/supplies`; stock 
 | `src/lib/types.ts`                     | **Shared contract.** Money is always whole cents        |
 | `src/lib/db.ts`                        | Tiger Data client (`query()`) — server only             |
 | `src/lib/mock-data.ts`                 | Fake data the API returns until the DB is wired         |
-| `src/lib/integrations/cloudinary.ts`   | Image URLs + signed uploads                             |
+| `src/lib/images.ts`                    | Menu picture URLs                                       |
 | `src/lib/speech.ts`                    | Read aloud (browser Web Speech API)                     |
 | `src/lib/explain.ts`                   | Simple-words explanations (local rules)                 |
 | `src/lib/metrics.ts`                   | Insight numbers, computed in code (never by the AI)     |
@@ -72,3 +72,17 @@ Tailwind 4 is configured in CSS, so there is no `tailwind.config.js`: tokens in 
 `dev` · `build` · `start` · `lint` · `typecheck` · `format` · `db:schema` · `db:seed`
 
 See [TEAM.md](TEAM.md) for who owns what.
+
+## Before a demo
+
+- `npm run demo:reset`: rebuilds the schema, reseeds 90 days of data and runs `npm run db:check`.
+- `npm run db:check`: checks the data adds up (stock vs. its ledger, sales vs. their items, rollups vs. raw data, café-time days, no failed jobs). `-- --fix` repairs sales from before the millisecond fix.
+- `npm test`: unit tests in `src/lib/*.test.ts`.
+
+**Café time.** Days, weeks and months are on the café's clock (America/Toronto) everywhere: the continuous aggregates, the queries and the seed. "Today" no longer flips at 7 pm.
+
+**Staff PIN.** Set `STAFF_PIN` in `.env.local` and changing stock, buying supplies or the starting balance asks for it (once an hour per tablet). Selling never does.
+
+**No Wi-Fi.** A sale that can't reach the server waits on the tablet and is sent when the connection is back. It keeps its real time and is counted once. In production a service worker lets the register open offline.
+
+**Starting balance.** Money › This month › the pencil next to "Start of …".

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { SpeakButton } from "@/components/voice/SpeakButton";
-import { imageUrl } from "@/lib/integrations/cloudinary";
+import { imageUrl } from "@/lib/images";
 import { formatCents } from "@/lib/money";
 import { sizeLabel } from "@/lib/sizes";
 import type { DrinkSize, MenuItem, SaleItem } from "@/lib/types";
@@ -37,7 +37,7 @@ export function OrderTray({
       : `Order has ${items.reduce((acc, i) => acc + i.qty, 0)} items. Total is ${formatCents(totalCents)}.`;
 
   return (
-    <aside className="flex min-h-[28rem] flex-col rounded-tile bg-white ring-1 ring-ink/10 lg:h-full">
+    <aside className="flex min-h-[28rem] flex-col rounded-tile bg-white ring-1 ring-ink/10 md:h-full md:min-h-0">
       <header className="flex items-center justify-between px-5 pt-4 pb-2">
         <div className="flex items-center gap-3">
           <h2 className="text-2xl font-bold">Order</h2>
@@ -97,54 +97,55 @@ export function OrderTray({
             return (
               <li
                 key={`${line.menuItemId}|${line.size ?? ""}`}
-                className="flex items-center gap-3 py-3"
+                className="grid grid-cols-[3rem_minmax(0,1fr)] items-center gap-x-3 gap-y-1 py-3"
               >
+                {/* Two rows, so the whole name fits even in a narrow tray (iPad). */}
                 <Image
-                  src={imageUrl(item.imagePublicId, 96)}
+                  src={imageUrl(item.imagePublicId)}
                   alt=""
                   width={48}
                   height={48}
                   unoptimized
-                  className="size-12"
+                  className="row-span-2 size-12"
                 />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="truncate text-lg font-semibold">{name}</p>
-                    <SpeakButton
-                      text={lineSpoken}
-                      size="sm"
-                      label={`Read ${name}`}
-                      className="size-7"
-                    />
-                  </div>
+                <div className="flex items-center gap-2">
+                  <p className="text-lg leading-snug font-semibold">{name}</p>
+                  <SpeakButton
+                    text={lineSpoken}
+                    size="sm"
+                    label={`Read ${name}`}
+                    className="size-7"
+                  />
+                </div>
+                <div className="flex items-center justify-between gap-2">
                   <p className="text-base text-ink-soft tabular-nums">
                     {line.qty} × {formatCents(line.unitPriceCents)}
                   </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => onRemove(line.menuItemId, line.size)}
-                    aria-label={`One less ${name}`}
-                    className={stepBtn}
-                  >
-                    −
-                  </button>
-                  <span
-                    className="w-8 text-center text-2xl font-bold tabular-nums"
-                    aria-label={`${line.qty} ${name}`}
-                  >
-                    {line.qty}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => onAdd(line.menuItemId, line.size)}
-                    disabled={atMax}
-                    aria-label={`One more ${name}`}
-                    className={stepBtn}
-                  >
-                    +
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onRemove(line.menuItemId, line.size)}
+                      aria-label={`One less ${name}`}
+                      className={stepBtn}
+                    >
+                      −
+                    </button>
+                    <span
+                      className="w-8 text-center text-2xl font-bold tabular-nums"
+                      aria-label={`${line.qty} ${name}`}
+                    >
+                      {line.qty}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => onAdd(line.menuItemId, line.size)}
+                      disabled={atMax}
+                      aria-label={`One more ${name}`}
+                      className={stepBtn}
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
               </li>
             );

@@ -1,4 +1,5 @@
 import { billsCover, dollars, forecastMonth, monthName, type BudgetMonth } from "@/lib/budget";
+import { cafeDate } from "@/lib/cafe-time";
 
 const COVERED = "#93c6a3"; // muted money-in green
 const TO_GO = "#e6c97a"; // muted butter: "not there yet"
@@ -12,13 +13,13 @@ export function BillsCover({ month }: { month: BudgetMonth | undefined }) {
   const share = needCents ? Math.min(1, month.inCents / needCents) : 1;
   const name = monthName(month.month);
 
-  // Forecast only for the month we are in (today's UTC date, like the rest of the Money data).
-  const now = new Date();
-  const isThisMonth = now.toISOString().slice(0, 7) === month.month;
+  // Forecast only for the month we are in (today on the café's clock, like the rest of the Money data).
+  const now = cafeDate();
+  const isThisMonth = now.slice(0, 7) === month.month;
   const daysInMonth = new Date(
     Date.UTC(+month.month.slice(0, 4), +month.month.slice(5, 7), 0),
   ).getUTCDate();
-  const today = isThisMonth ? now.getUTCDate() : daysInMonth;
+  const today = isThisMonth ? Number(now.slice(8, 10)) : daysInMonth;
   const forecast = isThisMonth ? forecastMonth(month, today, daysInMonth) : null;
 
   // Running total of money in, day by day.

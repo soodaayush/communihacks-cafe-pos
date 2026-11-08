@@ -9,9 +9,10 @@ import { CountSheet } from "@/components/stock/CountSheet";
 import { StockLevel } from "@/components/stock/StockLevel";
 import { Trends } from "@/components/stock/Trends";
 import { SpeakButton } from "@/components/voice/SpeakButton";
-import { imageUrl } from "@/lib/integrations/cloudinary";
+import { imageUrl } from "@/lib/images";
 import type { MenuItem, RestockSuggestion, TrendPoint } from "@/lib/types";
 import { playSound } from "@/lib/sounds";
+import { staffFetch } from "@/lib/staff-client";
 
 // View only: this screen shows what is on the shelf. Buying happens outside the register.
 
@@ -52,7 +53,7 @@ export default function StockPage() {
   useEffect(load, []);
 
   async function saveCount(item: MenuItem, count: number) {
-    const res = await fetch("/api/inventory/count", {
+    const res = await staffFetch("/api/inventory/count", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ menuItemId: item.id, stock: count }),
@@ -156,7 +157,7 @@ export default function StockPage() {
                 >
                   <div className="flex items-center gap-3">
                     <Image
-                      src={imageUrl(item.imagePublicId, 96)}
+                      src={imageUrl(item.imagePublicId)}
                       alt=""
                       width={56}
                       height={56}
@@ -203,7 +204,7 @@ export default function StockPage() {
           name={counting.name}
           picture={
             <Image
-              src={imageUrl(counting.imagePublicId, 96)}
+              src={imageUrl(counting.imagePublicId)}
               alt=""
               width={56}
               height={56}

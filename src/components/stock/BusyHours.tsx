@@ -12,9 +12,6 @@ import type { BusyHour } from "@/lib/types";
 const label = (h: number) =>
   h === 0 ? "12am" : h < 12 ? `${h}am` : h === 12 ? "12pm" : `${h - 12}pm`;
 
-/** The database groups by UTC hour; show the hour on this tablet's clock (same as the Money screen). */
-const localHour = (utcHour: number) => new Date(Date.UTC(2026, 0, 15, utcHour)).getHours();
-
 export function BusyHours() {
   const [hours, setHours] = useState<BusyHour[] | null>(null);
 
@@ -22,13 +19,7 @@ export function BusyHours() {
     let live = true;
     fetch("/api/busy-hours?days=14")
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error("busy-hours"))))
-      .then(
-        (rows: BusyHour[]) =>
-          live &&
-          setHours(
-            rows.map((h) => ({ ...h, hour: localHour(h.hour) })).sort((a, b) => a.hour - b.hour),
-          ),
-      )
+      .then((rows: BusyHour[]) => live && setHours(rows)) // already café hours (Toronto)
       .catch(() => {});
     return () => {
       live = false;

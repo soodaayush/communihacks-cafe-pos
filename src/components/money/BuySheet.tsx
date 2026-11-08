@@ -6,6 +6,7 @@ import type { BuyResult } from "@/app/api/supplies/buy/route";
 import { Icon } from "@/components/icons/Icon";
 import { pictureOf } from "@/components/icons/supplyPicture";
 import { SpeakButton } from "@/components/voice/SpeakButton";
+import { staffFetch } from "@/lib/staff-client";
 import type { InventoryItem } from "@/lib/types";
 import { packNote, unitOf } from "@/lib/units";
 import { money } from "./BoughtList";
@@ -46,7 +47,7 @@ export function BuySheet({
     setSaving(true);
     setFailed(false);
     try {
-      const r = await fetch("/api/supplies/buy", {
+      const r = await staffFetch("/api/supplies/buy", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ inventoryItemId: picked.id, qty }),

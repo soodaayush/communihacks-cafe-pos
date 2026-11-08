@@ -21,11 +21,9 @@ export function ExplanationBubble({ request, text, className = "" }: Explanation
     <div
       role="region"
       aria-label="Audio explanation"
-      className={`relative flex items-center gap-3 rounded-2xl bg-white px-4 py-3 ring-1 ring-ink/10 shadow-sm ${className}`}
+      className={`relative flex items-center gap-3 rounded-2xl bg-white px-4 py-3 shadow-sm ring-1 ring-ink/10 ${className}`}
     >
-      <p className="min-w-0 flex-1 text-base leading-snug font-medium text-ink">
-        {message}
-      </p>
+      <p className="min-w-0 flex-1 text-base leading-snug font-medium text-ink">{message}</p>
       <SpeakButton text={message} size="md" label="Listen to explanation" />
     </div>
   );
