@@ -27,7 +27,8 @@ export function speakableText(text: string): string {
     })
     .replace(/\s*−\s*/g, " minus ")
     .replace(/\s*\+\s*/g, " plus ")
-    .replace(/\s*=\s*/g, " equals ");
+    .replace(/\s*=\s*/g, " equals ")
+    .replace(/\s*×\s*/g, " times ");
 }
 
 export type SpeakState = "idle" | "loading" | "playing";

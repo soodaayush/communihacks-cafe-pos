@@ -19,7 +19,7 @@ export function MoneyPiece({ cents }: { cents: Denom }) {
     return (
       <span
         aria-hidden
-        className={`inline-flex h-14 w-28 shrink-0 items-center justify-between rounded-lg border-2 border-ink/15 px-3 text-xl font-bold ${BILL[cents]}`}
+        className={`inline-flex h-14 w-28 shrink-0 items-center justify-between rounded-lg border-2 border-ink/40 px-3 text-xl font-bold ${BILL[cents]}`}
       >
         <span className="size-6 rounded-full border-2 border-ink/20" />
         {label}
