@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import type { ReactNode } from "react";
 import { SpeakButton } from "@/components/voice/SpeakButton";
 import { imageUrl } from "@/lib/integrations/cloudinary";
 import { formatCents } from "@/lib/money";
@@ -16,8 +15,6 @@ export interface OrderTrayProps {
   onRemove: (menuItemId: string, size?: DrinkSize) => void;
   onClear: () => void;
   onPay: () => void;
-  /** Extra round button next to the speaker, e.g. the microphone for ordering by voice. */
-  extraAction?: ReactNode;
 }
 
 const stepBtn =
@@ -31,7 +28,6 @@ export function OrderTray({
   onRemove,
   onClear,
   onPay,
-  extraAction,
 }: OrderTrayProps) {
   const byId = new Map(menu.map((m) => [m.id, m]));
 
@@ -46,12 +42,12 @@ export function OrderTray({
         <div className="flex items-center gap-3">
           <h2 className="text-2xl font-bold">Order</h2>
           <SpeakButton text={orderSpeechSummary} size="sm" label="Read order summary" />
-          {extraAction}
         </div>
         {items.length > 0 && (
           <button
             type="button"
             onClick={onClear}
+            data-sound="remove"
             className="flex min-h-12 items-center gap-2 rounded-full bg-blush/60 px-4 text-lg font-semibold"
           >
             <svg

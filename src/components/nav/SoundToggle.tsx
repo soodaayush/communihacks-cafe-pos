@@ -1,13 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
 import { Icon } from "@/components/icons/Icon";
-import { playSound, preloadSounds, setSoundsOn, useSoundsOn } from "@/lib/sounds";
+import { playSound, setSoundsOn, useSoundsOn } from "@/lib/sounds";
 
 /** Turns the app's little sound effects on or off. Remembered on this device. */
 export function SoundToggle() {
   const on = useSoundsOn();
-  useEffect(() => preloadSounds(), []);
   return (
     <button
       type="button"
@@ -16,6 +14,7 @@ export function SoundToggle() {
         on ? "Sounds are on. Tap to turn them off." : "Sounds are off. Tap to turn them on."
       }
       title={on ? "Sounds on" : "Sounds off"}
+      data-sound="none"
       onClick={() => {
         setSoundsOn(!on);
         if (!on) setTimeout(() => playSound("success"), 50); // a little hello when turned on

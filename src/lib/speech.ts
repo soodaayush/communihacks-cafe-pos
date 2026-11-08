@@ -49,7 +49,7 @@ const pending = new Map<string, Promise<string | null>>();
  * after the tap. So the first tap plays a silent sound straight away: that "unlocks" the audio
  * player for the rest of the session (iPad Safari needs this).
  */
-export function unlockAudio() {
+function unlockAudio() {
   if (!audioEl) audioEl = new Audio();
   if (unlocked) return;
   unlocked = true;

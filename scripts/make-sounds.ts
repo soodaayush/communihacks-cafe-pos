@@ -1,4 +1,5 @@
-// Makes the app's sound effects with ElevenLabs Sound Effects and saves them in public/sounds.
+// OPTIONAL. The app already has built-in sounds. This makes ElevenLabs Sound Effects versions instead and
+// saves them in public/sounds; once public/sounds/manifest.json exists the app plays these.
 // Run once:  npm run sounds        (needs ELEVENLABS_API_KEY with the Sound Effects permission)
 // Skips files that already exist. Use --force to make them again (e.g. after changing a prompt).
 // The files are committed, so teammates and the live app never need the key to play them.
@@ -16,12 +17,23 @@ const SOUNDS: { name: string; seconds: number; prompt: string }[] = [
   {
     name: "add",
     seconds: 0.5,
-    prompt: "A single soft, friendly wooden pop. Very short, gentle, a quiet app tap.",
+    prompt:
+      "A single soft, friendly bubble pop that rises slightly. Very short, gentle, a quiet app tap.",
   },
   {
     name: "remove",
     seconds: 0.5,
-    prompt: "A soft, quiet low swoosh going down. Very short, subtle, gentle app sound.",
+    prompt: "A single soft bubble that sinks slightly. Very short, quiet and gentle.",
+  },
+  {
+    name: "tap",
+    seconds: 0.5,
+    prompt: "A tiny, very soft, light tick, like a gentle button press. Extremely short and quiet.",
+  },
+  {
+    name: "success",
+    seconds: 1.2,
+    prompt: "A gentle, warm two-note chime going up. Calm, happy and short.",
   },
   {
     name: "sale",
@@ -30,20 +42,9 @@ const SOUNDS: { name: string; seconds: number; prompt: string }[] = [
       "A classic cash register cha-ching: a bright bell and a drawer. Short and pleasant, not loud.",
   },
   {
-    name: "success",
-    seconds: 1.2,
-    prompt: "A gentle, warm two-note chime going up. Calm, happy and short.",
-  },
-  {
     name: "error",
     seconds: 0.8,
     prompt: "A soft, low, gentle double boop. Friendly and not harsh, short.",
-  },
-  {
-    name: "listen",
-    seconds: 0.5,
-    prompt:
-      "A soft rising two-note blip, like a microphone starting to listen. Very short and gentle.",
   },
 ];
 
@@ -78,7 +79,18 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+// Tells the app which files exist. Delete public/sounds/manifest.json to go back to the built-in sounds.
+function writeManifest() {
+  const manifest: Record<string, string> = {};
+  for (const s of SOUNDS)
+    if (existsSync(join(OUT, `${s.name}.mp3`))) manifest[s.name] = `${s.name}.mp3`;
+  writeFileSync(join(OUT, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n");
+  console.log(`manifest.json lists ${Object.keys(manifest).length} sounds`);
+}
+
+main()
+  .then(writeManifest)
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });

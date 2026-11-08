@@ -26,6 +26,7 @@ export function ItemTile({ item, qtyInTray, onTap }: ItemTileProps) {
       <button
         type="button"
         onClick={() => onTap(item)}
+        data-sound={sized ? "tap" : "add"}
         disabled={soldOut}
         aria-label={`${item.name}, ${sized ? "pick a size" : price}${qtyInTray ? `, ${qtyInTray} in order` : ""}${soldOut ? ", none left" : ""}`}
         className="flex flex-1 flex-col text-left transition-transform disabled:opacity-45 motion-safe:active:scale-[0.97]"

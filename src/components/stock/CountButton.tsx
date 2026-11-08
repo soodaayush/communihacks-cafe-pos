@@ -10,6 +10,7 @@ export function CountButton({ name, onClick }: { name: string; onClick: () => vo
       type="button"
       aria-label={`Count ${name}`}
       title="Count"
+      data-sound="tap"
       onClick={onClick}
       className="flex size-12 shrink-0 items-center justify-center rounded-full bg-cream text-ink-soft ring-1 ring-ink/15 transition-colors hover:bg-lavender/40 hover:text-ink motion-safe:active:scale-95"
     >
