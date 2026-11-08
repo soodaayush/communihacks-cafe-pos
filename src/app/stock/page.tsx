@@ -146,7 +146,7 @@ export default function StockPage() {
           {/* On big screens the tiles share the whole height (never shorter than 11.5rem). */}
           <section
             aria-label="Shelf"
-            className="grid gap-4 sm:grid-cols-2 lg:min-h-0 lg:flex-1 lg:auto-rows-[minmax(11.5rem,1fr)] lg:overflow-y-auto lg:pr-1"
+            className="grid auto-rows-max content-start gap-4 sm:grid-cols-2 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pr-1"
           >
             {menu
               .filter((item) => item.category !== "drink")

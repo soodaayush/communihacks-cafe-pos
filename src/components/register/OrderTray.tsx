@@ -93,7 +93,6 @@ export function OrderTray({
               .reduce((s, l) => s + l.qty, 0);
             const atMax = inOrder >= item.stock;
             const name = line.size ? `${item.name} (${sizeLabel(line.size)})` : item.name;
-            const lineSpoken = `${line.qty} ${name}, ${formatCents(line.unitPriceCents * line.qty)}`;
             return (
               <li
                 key={`${line.menuItemId}|${line.size ?? ""}`}
@@ -108,17 +107,11 @@ export function OrderTray({
                   unoptimized
                   className="row-span-2 size-12"
                 />
-                <div className="flex items-center gap-2">
-                  <p className="text-lg leading-snug font-semibold">{name}</p>
-                  <SpeakButton
-                    text={lineSpoken}
-                    size="sm"
-                    label={`Read ${name}`}
-                    className="size-7"
-                  />
-                </div>
+                {/* No speaker per line: the one at the top of the tray reads the whole order. */}
+                <p className="text-lg leading-snug font-semibold">{name}</p>
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-base text-ink-soft tabular-nums">
+                  {/* Top-aligned so the price sits right under the name, not centred on the tall buttons. */}
+                  <p className="self-start text-base whitespace-nowrap text-ink-soft tabular-nums">
                     {line.qty} × {formatCents(line.unitPriceCents)}
                   </p>
                   <div className="flex items-center gap-2">
