@@ -119,6 +119,8 @@ export interface SpeakRequest {
   text: string;
 }
 
+// POST /api/speak answers with audio (ElevenLabs) when it is set up, or with this JSON, which means
+// "read this text with the browser's voice".
 export interface SpeakResponse {
   engine: "browser";
   text: string;
