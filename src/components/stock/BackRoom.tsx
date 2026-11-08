@@ -41,9 +41,9 @@ function Tile({ item, onCount }: { item: InventoryItem; onCount: () => void }) {
     (lasts ? ` ${lasts}.` : "");
 
   return (
-    <div className="flex flex-col justify-between gap-3 rounded-tile bg-white p-4 ring-1 ring-ink/10 lg:p-5">
-      <div className="flex items-center gap-3">
-        <Icon name={pictureOf(item)} className="size-14 lg:size-16" />
+    <div className="flex flex-col justify-between gap-5 rounded-tile bg-white p-5 ring-1 ring-ink/10 lg:p-6">
+      <div className="flex items-center gap-4">
+        <Icon name={pictureOf(item)} className="size-16 lg:size-20" />
         <p className="min-w-0 flex-1 text-xl font-semibold">{item.name}</p>
         <div className="flex items-center gap-2">
           {forDrinks ? (
@@ -134,7 +134,8 @@ export function BackRoom() {
   }
 
   const heading = "text-2xl font-bold";
-  const grid = "grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4";
+  // Roomy: two big tiles per row on a laptop or iPad, three only on very wide screens.
+  const grid = "grid gap-5 lg:grid-cols-2 lg:gap-6 2xl:grid-cols-3";
 
   return (
     <div className="flex flex-col gap-4 lg:min-h-0 lg:flex-1">
