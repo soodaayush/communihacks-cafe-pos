@@ -9,12 +9,13 @@ const LINKS: { href: string; icon: IconName; label: string }[] = [
   { href: "/register", icon: "cart", label: "Register" },
   { href: "/stock", icon: "boxes", label: "Stock" },
   { href: "/money", icon: "coin", label: "Money" },
+  { href: "/learn", icon: "book", label: "Learn" },
 ];
 
 export function NavBar() {
   const path = usePathname();
   return (
-    <nav className="grid grid-cols-[repeat(3,1fr)_auto] gap-2 border-t border-ink/5 bg-paper/80 px-4 py-2.5 shadow-[0_-8px_24px_-16px_rgb(61_59_72/0.25)] backdrop-blur-md sm:gap-3">
+    <nav className="grid grid-cols-[repeat(4,1fr)_auto] gap-2 border-t border-ink/5 bg-paper/80 px-4 py-2.5 shadow-[0_-8px_24px_-16px_rgb(61_59_72/0.25)] backdrop-blur-md sm:gap-3">
       {LINKS.map(({ href, icon, label }) => {
         const active = path.startsWith(href);
         return (
