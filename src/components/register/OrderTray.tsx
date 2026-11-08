@@ -33,8 +33,13 @@ export function OrderTray({
 
   const orderSpeechSummary =
     items.length === 0
-      ? "Order tray is empty. Tap pictures to add items."
-      : `Order has ${items.reduce((acc, i) => acc + i.qty, 0)} items. Total is ${formatCents(totalCents)}.`;
+      ? "The order is empty. Tap a picture to add it."
+      : `In the order: ${items
+          .map((l) => {
+            const item = byId.get(l.menuItemId);
+            return `${l.qty} ${l.size ? `${sizeLabel(l.size)} ` : ""}${item?.name ?? ""}`;
+          })
+          .join(", ")}. The total is ${formatCents(totalCents)}. Tap Pay when you are ready.`;
 
   return (
     <aside className="flex min-h-[28rem] flex-col rounded-tile bg-white ring-1 ring-ink/10 md:h-full md:min-h-0">
@@ -151,7 +156,7 @@ export function OrderTray({
           <div className="flex items-center gap-2">
             <span className="text-2xl font-semibold">Total</span>
             <SpeakButton
-              text={`Total is ${formatCents(totalCents)}`}
+              text={`The total is ${formatCents(totalCents)}.`}
               size="sm"
               label="Read total"
             />

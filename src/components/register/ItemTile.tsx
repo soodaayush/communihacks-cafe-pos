@@ -19,7 +19,9 @@ export function ItemTile({ item, qtyInTray, onTap }: ItemTileProps) {
   // Drinks open the size menu, so their tile shows a ">" instead of a price.
   const sized = hasSizes(item.category);
   const price = formatCents(item.priceCents);
-  const spokenDescription = `${item.name}. ${sized ? "Drink, choose a size" : `${price}`}${soldOut ? ", sold out" : ""}`;
+  const spokenDescription = soldOut
+    ? `${item.name}. None left.`
+    : `${item.name}. ${sized ? "Tap to pick a size." : `${price}.`}`;
 
   return (
     <div className="relative flex flex-col overflow-hidden rounded-tile bg-white text-left shadow-[0_1px_0_rgb(74_74_85/0.08)] ring-1 ring-ink/10">

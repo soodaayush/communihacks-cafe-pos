@@ -24,12 +24,11 @@ function BestSellers({ menu, trends }: { menu: MenuItem[]; trends: TrendPoint[] 
   const maxSold = Math.max(1, ...sold.map((s) => s.qty));
 
   const speechSummary =
-    "Best sellers in the last 4 weeks: " +
+    "Best sellers in the last 4 weeks. " +
     sold
       .slice(0, 3)
-      .map((s, idx) => `Number ${idx + 1} is ${s.item.name} with ${s.qty} sold`)
-      .join(". ") +
-    ".";
+      .map((s, idx) => `${["First", "Second", "Third"][idx]}, ${s.item.name}: ${s.qty} sold.`)
+      .join(" ");
 
   return (
     <section

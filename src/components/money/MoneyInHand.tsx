@@ -45,8 +45,8 @@ export function MoneyInHand({ label, inCents, boughtCents }: MoneyInHandProps) {
   const left = paid - bought;
   const short = left < 0;
   const say = short
-    ? `${label}, customers paid ${formatDollars(paid)}. We bought ${formatDollars(bought)}. We are short by ${formatDollars(-left)}.`
-    : `${label}, customers paid ${formatDollars(paid)}. We bought ${formatDollars(bought)}. We have ${formatDollars(left)} in hand.`;
+    ? `${label}, customers paid ${formatDollars(paid)}. We spent ${formatDollars(bought)} buying stock. We spent ${formatDollars(-left)} more than came in.`
+    : `${label}, customers paid ${formatDollars(paid)}. We spent ${formatDollars(bought)} buying stock. That leaves ${formatDollars(left)} in hand.`;
 
   return (
     <section className="flex flex-col gap-4 rounded-tile bg-white p-5 ring-1 ring-ink/10">

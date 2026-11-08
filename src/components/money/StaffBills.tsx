@@ -22,8 +22,8 @@ export function StaffBills({ label, expenses }: { label: string; expenses: Expen
     byType.size === 0
       ? `No bills paid ${label.toLowerCase()}.`
       : `Bills paid ${label.toLowerCase()}: ` +
-        [...byType].map(([type, cents]) => `${BILL[type]}: ${formatCents(cents)}`).join(". ") +
-        `. Total bills: ${formatCents(total)}.`;
+        [...byType].map(([type, cents]) => `${BILL[type]}, ${formatCents(cents)}`).join(". ") +
+        `. All bills together: ${formatCents(total)}.`;
 
   return (
     <details className="rounded-tile bg-white/60 px-5 py-3 ring-1 ring-ink/10">

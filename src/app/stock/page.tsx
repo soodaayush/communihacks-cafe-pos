@@ -138,7 +138,7 @@ export default function StockPage() {
               Drinks are made fresh. Their ingredients are in &ldquo;In the back&rdquo;.
             </p>
             <SpeakButton
-              text="Shelf stock. Drinks are made fresh, so their ingredients are kept in the back. Here you can count food on the shelf."
+              text="The shelf. This is the food for sale. Drinks are made fresh, so their ingredients are in the back. To count something, tap its pencil."
               size="sm"
               label="Read shelf view info"
             />
@@ -175,7 +175,11 @@ export default function StockPage() {
                         <span className="text-base text-ink-soft lg:text-lg">left</span>
                       </p>
                       <SpeakButton
-                        text={`${item.name}, ${item.stock} left on the shelf.${runningLow.has(item.id) ? " Running low!" : ""}`}
+                        text={
+                          item.stock <= 0
+                            ? `${item.name}. None left. Time to buy more.`
+                            : `${item.name}. ${item.stock} left on the shelf.${runningLow.has(item.id) ? " Running low." : ""}`
+                        }
                         size="sm"
                         label={`Read stock for ${item.name}`}
                       />
