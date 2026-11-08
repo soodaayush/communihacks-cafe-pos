@@ -2,9 +2,9 @@
 -- Run: npm run db:schema   (safe to re-run: everything is IF NOT EXISTS)
 --
 -- Layout
---   Regular tables : menu_items, inventory_items, recipes, purchases, expenses
+--   Regular tables : menu_items, inventory_items, recipes, purchases, expenses, settings
 --   Hypertables    : sales, sale_items, stock_movements   (time-series, append-mostly history)
---   Aggregates     : sales_daily, sales_hourly, item_daily (continuous aggregates)
+--   Aggregates     : sales_daily, sales_hourly, item_daily, stock_use_daily (continuous aggregates)
 
 CREATE EXTENSION IF NOT EXISTS timescaledb;
 
@@ -56,14 +56,23 @@ CREATE TABLE IF NOT EXISTS recipes (
 -- Syntax from the Tiger Data quickstart: WITH (tsdb.hypertable, ...).
 CREATE TABLE IF NOT EXISTS sales (
   id             uuid        NOT NULL DEFAULT gen_random_uuid(),
-  created_at     timestamptz NOT NULL DEFAULT now(),
+  -- Milliseconds only: the app links sale_items to a sale by (id, created_at), and JavaScript dates
+  -- keep 3 decimals where Postgres keeps 6, so a full-precision time would never match its items.
+  created_at     timestamptz NOT NULL DEFAULT date_trunc('milliseconds', now()),
   payment_method text        NOT NULL CHECK (payment_method IN ('cash', 'debit')),
   total_cents    integer     NOT NULL CHECK (total_cents >= 0),
+  -- Set by the register for every sale, so a sale sent twice (e.g. retried after the Wi-Fi came
+  -- back) is only recorded once.
+  client_ref     text,
   PRIMARY KEY (id, created_at)
 ) WITH (
   tsdb.hypertable,
   tsdb.orderby = 'created_at DESC'
 );
+ALTER TABLE sales ALTER COLUMN created_at SET DEFAULT date_trunc('milliseconds', now());
+ALTER TABLE sales ADD COLUMN IF NOT EXISTS client_ref text;
+CREATE INDEX IF NOT EXISTS sales_client_ref_idx ON sales (client_ref, created_at DESC)
+  WHERE client_ref IS NOT NULL;
 
 -- Hypertable too (time column = sale_created_at): the biggest table, so it gets columnstore
 -- compression segmented by menu item, and it can feed continuous aggregates (item_daily below).
@@ -128,20 +137,39 @@ CREATE TABLE IF NOT EXISTS expenses (
 -- Continuous aggregates: TimescaleDB keeps these rollups up to date for us.
 -- All are real-time (materialized_only = false): a query also includes the newest rows that
 -- are not materialized yet, so a sale rung up one second ago shows up. The policy refreshes
--- the stored part every few minutes. Buckets are UTC days/hours.
+-- the stored part every few minutes.
+--
+-- Days are the CAFE'S days (America/Toronto, daylight saving included), not UTC days: a UTC day
+-- ends at 7 pm in Toronto, which would move every evening sale onto "tomorrow". The app uses the
+-- same time zone (src/lib/cafe-time.ts); change both together. Hours stay UTC hours: Toronto is a
+-- whole number of hours from UTC, so the app turns them into café hours when it reads them.
 
--- Money in per day. Money out and profit come from expenses + item_daily in the summary query.
+-- Databases made before days were café days: those two rollups were UTC days. They only hold
+-- numbers worked out from sales, so they are rebuilt from the sales themselves.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM timescaledb_information.continuous_aggregates
+              WHERE view_name = 'sales_daily' AND view_definition NOT LIKE '%America/Toronto%') THEN
+    DROP MATERIALIZED VIEW sales_daily;
+  END IF;
+  IF EXISTS (SELECT 1 FROM timescaledb_information.continuous_aggregates
+              WHERE view_name = 'item_daily' AND view_definition NOT LIKE '%America/Toronto%') THEN
+    DROP MATERIALIZED VIEW item_daily;
+  END IF;
+END $$;
+
+-- Money in per café day. Money out and profit come from expenses + item_daily in the summary query.
 CREATE MATERIALIZED VIEW IF NOT EXISTS sales_daily
 WITH (timescaledb.continuous) AS
 SELECT
-  time_bucket(INTERVAL '1 day', created_at) AS day,
-  count(*)::int                             AS sale_count,
-  sum(total_cents)::bigint                  AS money_in_cents
+  time_bucket(INTERVAL '1 day', created_at, 'America/Toronto') AS day,
+  count(*)::int                                                AS sale_count,
+  sum(total_cents)::bigint                                     AS money_in_cents
 FROM sales
 GROUP BY 1
 WITH NO DATA;
 
--- Sales per hour: powers the "busiest hours" chart.
+-- Sales per hour: powers the "busiest hours" charts.
 CREATE MATERIALIZED VIEW IF NOT EXISTS sales_hourly
 WITH (timescaledb.continuous) AS
 SELECT
@@ -152,22 +180,36 @@ FROM sales
 GROUP BY 1
 WITH NO DATA;
 
--- Units, revenue and cost of goods per menu item per day: powers trends, profit and restock forecasts.
+-- Units, revenue and cost of goods per menu item per café day: trends, profit and restock forecasts.
 CREATE MATERIALIZED VIEW IF NOT EXISTS item_daily
 WITH (timescaledb.continuous) AS
 SELECT
-  time_bucket(INTERVAL '1 day', sale_created_at) AS day,
+  time_bucket(INTERVAL '1 day', sale_created_at, 'America/Toronto') AS day,
   menu_item_id,
-  sum(qty)::int                                  AS qty_sold,
-  sum(qty * unit_price_cents)::bigint            AS revenue_cents,
-  sum(qty * unit_cost_cents)::bigint             AS cogs_cents
+  sum(qty)::int                                                     AS qty_sold,
+  sum(qty * unit_price_cents)::bigint                               AS revenue_cents,
+  sum(qty * unit_cost_cents)::bigint                                AS cogs_cents
 FROM sale_items
 GROUP BY 1, 2
 WITH NO DATA;
 
-ALTER MATERIALIZED VIEW sales_daily  SET (timescaledb.materialized_only = false);
-ALTER MATERIALIZED VIEW sales_hourly SET (timescaledb.materialized_only = false);
-ALTER MATERIALIZED VIEW item_daily   SET (timescaledb.materialized_only = false);
+-- How much of each back-room item went into drinks, per café day: "used this week" and
+-- "about N days left" for the drink ingredients.
+CREATE MATERIALIZED VIEW IF NOT EXISTS stock_use_daily
+WITH (timescaledb.continuous) AS
+SELECT
+  time_bucket(INTERVAL '1 day', created_at, 'America/Toronto') AS day,
+  inventory_item_id,
+  (-sum(change_qty))::numeric(14, 2)                           AS used
+FROM stock_movements
+WHERE reason = 'use'
+GROUP BY 1, 2
+WITH NO DATA;
+
+ALTER MATERIALIZED VIEW sales_daily     SET (timescaledb.materialized_only = false);
+ALTER MATERIALIZED VIEW sales_hourly    SET (timescaledb.materialized_only = false);
+ALTER MATERIALIZED VIEW item_daily      SET (timescaledb.materialized_only = false);
+ALTER MATERIALIZED VIEW stock_use_daily SET (timescaledb.materialized_only = false);
 
 SELECT add_continuous_aggregate_policy('sales_daily',
   start_offset => NULL, end_offset => INTERVAL '1 hour',
@@ -178,3 +220,13 @@ SELECT add_continuous_aggregate_policy('sales_hourly',
 SELECT add_continuous_aggregate_policy('item_daily',
   start_offset => NULL, end_offset => INTERVAL '1 hour',
   schedule_interval => INTERVAL '5 minutes', if_not_exists => TRUE);
+SELECT add_continuous_aggregate_policy('stock_use_daily',
+  start_offset => NULL, end_offset => INTERVAL '1 hour',
+  schedule_interval => INTERVAL '5 minutes', if_not_exists => TRUE);
+
+-- Small settings the staff can change, e.g. how much money the café had when the records start.
+CREATE TABLE IF NOT EXISTS settings (
+  key        text PRIMARY KEY,
+  value      jsonb       NOT NULL,
+  updated_at timestamptz NOT NULL DEFAULT now()
+);

@@ -1,9 +1,11 @@
 // Server-only. Monthly budget with balances that carry forward: each month starts with what the
 // month before ended with. Built from the same sales and expenses as the rest of the Money screen.
+import { cafeDate } from "./cafe-time";
 import { getDaySummaries, getExpenses } from "./money-data";
+import { OPENING_BALANCE, getSetting, type OpeningBalance } from "./settings";
 import type { Expense, ExpenseType } from "./types";
 
-// shortcut: assumed cash on hand when the records start; store it once someone owns the books.
+/** Until staff type in the real amount (Money › This month › the pencil by "Start of …"). */
 export const STARTING_BALANCE_CENTS = 100_000;
 
 export const BILL_LABEL: Record<ExpenseType, string> = {
@@ -37,11 +39,16 @@ export interface BudgetMonth {
   planCents: Record<ExpenseType, number> | null;
 }
 
-/** Oldest month first. Each month's opening is the previous month's closing. */
+/**
+ * Oldest month first. Each month's opening is the previous month's closing.
+ * `startCents` is what the café had on the 1st of `startMonth` (default: the oldest month). Months
+ * after it carry forward; months before it are worked back (their closing = the next opening).
+ */
 export function buildMonths(
   days: { date: string; moneyInCents: number }[],
   expenses: Expense[],
   startCents: number,
+  startMonth?: string,
 ): BudgetMonth[] {
   const months = new Map<string, BudgetMonth>();
   const monthOf = (date: string) => {
@@ -74,27 +81,50 @@ export function buildMonths(
     m.spentCents[e.type] += e.amountCents;
   }
 
-  let carry = startCents;
-  let lastSpent: BudgetMonth["spentCents"] | null = null;
-  return [...months.values()]
-    .sort((a, b) => a.month.localeCompare(b.month))
-    .map((m) => {
-      const closingCents = carry + m.inCents - m.outCents;
-      const row = { ...m, openingCents: carry, closingCents, planCents: lastSpent };
-      carry = closingCents;
-      lastSpent = m.spentCents;
-      return row;
-    });
+  if (!months.size) return [];
+  if (startMonth) monthOf(startMonth);
+  const list = [...months.values()].sort((a, b) => a.month.localeCompare(b.month));
+  const at = startMonth ? list.findIndex((m) => m.month === startMonth) : 0;
+
+  list.forEach((m, i) => (m.planCents = i > 0 ? list[i - 1].spentCents : null));
+  for (let i = at, carry = startCents; i < list.length; i++) {
+    const m = list[i];
+    m.openingCents = carry;
+    m.closingCents = carry = carry + m.inCents - m.outCents;
+  }
+  for (let i = at - 1, next = startCents; i >= 0; i--) {
+    const m = list[i];
+    m.closingCents = next;
+    m.openingCents = next = next - m.inCents + m.outCents;
+  }
+  return list;
 }
 
-/** This month plus `monthsBack` full months before it, oldest first. */
+const monthKey = (y: number, m0: number) => new Date(Date.UTC(y, m0, 1)).toISOString().slice(0, 7);
+
+/**
+ * This month plus `monthsBack` full months before it, oldest first. The balance starts from what
+ * staff typed in (settings table), or $1,000 at the start of the oldest month if nobody has yet.
+ */
 export async function getBudgetMonths(monthsBack = 2): Promise<BudgetMonth[]> {
-  const today = new Date();
-  const todayUtc = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
-  const start = Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - monthsBack, 1);
-  const days = Math.round((todayUtc - start) / 86_400_000) + 1;
+  // Calendar dates on the café's clock (Toronto), so a month ends when it ends there.
+  const [y, m, d] = cafeDate().split("-").map(Number);
+  const thisMonth = monthKey(y, m - 1);
+  const firstShown = monthKey(y, m - 1 - monthsBack);
+  const saved = await getSetting<OpeningBalance>(OPENING_BALANCE);
+  const anchor =
+    saved && saved.month <= thisMonth
+      ? saved
+      : { month: firstShown, cents: STARTING_BALANCE_CENTS };
+
+  // From the earlier of the two, so the balance can be carried up to the months on screen.
+  const from = anchor.month < firstShown ? anchor.month : firstShown;
+  const start = Date.UTC(+from.slice(0, 4), +from.slice(5, 7) - 1, 1);
+  const days = Math.round((Date.UTC(y, m - 1, d) - start) / 86_400_000) + 1;
   const [summaries, expenses] = await Promise.all([getDaySummaries(days), getExpenses(days)]);
-  return buildMonths(summaries, expenses, STARTING_BALANCE_CENTS);
+  return buildMonths(summaries, expenses, anchor.cents, anchor.month).filter(
+    (row) => row.month >= firstShown,
+  );
 }
 
 /**

@@ -33,13 +33,22 @@ export function BoughtList({ label, lines }: { label: string; lines: BoughtLine[
     lines.length === 0
       ? `Nothing bought ${label.toLowerCase()}.`
       : `What we bought ${label.toLowerCase()}: ` +
-        lines.map((l) => `${Math.round(l.qty)} ${unitOf(l.qty, l.unit)} of ${l.name} for ${money(l.costCents)}`).join(". ");
+        lines
+          .map(
+            (l) =>
+              `${Math.round(l.qty)} ${unitOf(l.qty, l.unit)} of ${l.name} for ${money(l.costCents)}`,
+          )
+          .join(". ");
 
   return (
     <section className="flex flex-col gap-3 rounded-tile bg-white p-5 ring-1 ring-ink/10">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">What we bought {label.toLowerCase()}</h2>
-        <SpeakButton text={speechSummary} size="md" label={`Read what we bought ${label.toLowerCase()}`} />
+        <SpeakButton
+          text={speechSummary}
+          size="md"
+          label={`Read what we bought ${label.toLowerCase()}`}
+        />
       </div>
       <ul className="flex h-56 flex-col gap-2 overflow-y-auto pr-1">
         {lines.length === 0 ? (

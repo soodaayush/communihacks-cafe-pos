@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { Icon } from "@/components/icons/Icon";
-import { imageUrl } from "@/lib/integrations/cloudinary";
+import { imageUrl } from "@/lib/images";
 import { lineLabel, type LearnLine, type LearnTransaction } from "@/lib/learn";
 
 // Same tints as the register: drinks blue, food yellow.
@@ -34,7 +34,7 @@ export function ItemChips({
           className={`relative flex shrink-0 items-center justify-center rounded-xl ${box} ${TINT[l.category] ?? "bg-lavender/50"}`}
         >
           <Image
-            src={imageUrl(l.imagePublicId, 96)}
+            src={imageUrl(l.imagePublicId)}
             alt=""
             width={52}
             height={52}

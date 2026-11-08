@@ -15,7 +15,10 @@
     "format:check": "prettier --check .",
     "db:schema": "tsx --env-file-if-exists=.env.local scripts/run-schema.ts",
     "db:seed": "tsx --env-file-if-exists=.env.local scripts/seed.ts",
-    "sounds": "tsx --env-file-if-exists=.env.local scripts/make-sounds.ts"
+    "sounds": "tsx --env-file-if-exists=.env.local scripts/make-sounds.ts",
+    "db:check": "tsx --env-file-if-exists=.env.local scripts/db-check.ts",
+    "demo:reset": "npm run db:schema && npm run db:seed && npm run db:check",
+    "test": "for f in src/lib/*.test.ts; do tsx \"$f\" || exit 1; done"
   },
   "dependencies": {
     "@google/genai": "3.0.0",

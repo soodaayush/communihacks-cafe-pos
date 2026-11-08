@@ -56,7 +56,7 @@ export function BusyDays() {
           <p className="mb-4 text-lg text-ink-soft">Money in on an average day of the week</p>
         </div>
         <SpeakButton
-          text={`Busy days: over the last month, our busiest day of the week was ${NAMES[best]} with an average of ${dollars(avg[best])} brought in.`}
+          text={`Busy days. In the last month, the busiest day was ${NAMES[best]}. On a ${NAMES[best]}, customers pay about ${dollars(avg[best])}.`}
           size="md"
           label="Read busy days"
         />

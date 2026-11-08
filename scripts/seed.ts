@@ -5,6 +5,7 @@
 // takes its ingredients out of the back room, exactly like a real sale does (src/lib/sales.ts).
 import { randomUUID } from "node:crypto";
 import { Client } from "pg";
+import { addDays, cafeDate, cafeTime, weekdayOf } from "../src/lib/cafe-time";
 import { sizePriceCents } from "../src/lib/sizes";
 
 const DAYS = 30;
@@ -285,14 +286,8 @@ const drinkCost = (drink: string, size: Size) =>
   );
 
 const iso = (d: Date) => d.toISOString();
-const dateOnly = (d: Date) => d.toISOString().slice(0, 10);
-
-// The café is in Kitchener-Waterloo (Eastern time). Sales are stored in UTC and the app shows hours on
-// the tablet's own clock, converted with standard time (UTC-5) all year, so the seed does the same:
-// "open 8am to 5pm" is 13:00-22:00 UTC and reads as 8am-5pm on a tablet there.
-const TORONTO_STANDARD_OFFSET_HOURS = -5;
-const torontoTime = (day: Date, minutes: number) =>
-  new Date(day.getTime() + minutes * 60_000 - TORONTO_STANDARD_OFFSET_HOURS * 3_600_000);
+// The café is in Kitchener-Waterloo: every day and time below is on its clock (Toronto time,
+// daylight saving included), the same clock the app and the database rollups use (cafe-time.ts).
 
 async function main() {
   const url = process.env.DATABASE_URL;
@@ -303,10 +298,11 @@ async function main() {
   const client = new Client({ connectionString: url });
   await client.connect();
 
-  // Day 0 = DAYS-1 days ago, last day = today.
-  const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
-  const dayStart = (i: number) => new Date(today.getTime() - (DAYS - 1 - i) * 86_400_000);
+  // Day 0 = DAYS-1 café days ago, the last day = today on the café's clock.
+  const todayDate = cafeDate();
+  const dateOf = (i: number) => addDays(todayDate, i - (DAYS - 1));
+  /** The instant `minutes` after midnight on café day `i`. */
+  const clock = (i: number, minutes: number) => cafeTime(dateOf(i), minutes);
   const now = Date.now();
 
   try {
@@ -316,7 +312,7 @@ async function main() {
     await client.query(
       "TRUNCATE recipes, sale_items, sales, stock_movements, purchases, expenses, inventory_items, menu_items RESTART IDENTITY CASCADE",
     );
-    for (const view of ["sales_daily", "sales_hourly", "item_daily"]) {
+    for (const view of ["sales_daily", "sales_hourly", "item_daily", "stock_use_daily"]) {
       await client.query(`CALL refresh_continuous_aggregate('${view}', NULL, NULL)`);
     }
 
@@ -354,10 +350,10 @@ async function main() {
     const lastSaleAt: (Date | null)[] = Array.from({ length: DAYS }, () => null);
 
     for (let d = 0; d < DAYS; d++) {
-      const weekend = [0, 6].includes(dayStart(d).getUTCDay());
+      const weekend = [0, 6].includes(weekdayOf(dateOf(d)));
       const orders = randInt(weekend ? 45 : 28, weekend ? 70 : 50);
       for (let o = 0; o < orders; o++) {
-        const at = torontoTime(dayStart(d), 8 * 60 + randInt(0, 9 * 60));
+        const at = clock(d, 8 * 60 + randInt(0, 9 * 60)); // open 8 am to 5 pm;
         if (at.getTime() > now) continue; // nothing in the future
         if (!lastSaleAt[d] || at > lastSaleAt[d]!) lastSaleAt[d] = at;
         const id = randomUUID();
@@ -443,7 +439,7 @@ async function main() {
           .reduce((s, day) => s + day[i], 0);
         const qty = Math.max(6, Math.round(weekSold * 1.1));
         const totalCost = qty * MENU[i].cost;
-        const at = new Date(dayStart(d).getTime() + 7 * 3_600_000);
+        const at = clock(d, 7 * 60);
         if (at.getTime() > now) continue;
         await client.query(
           `INSERT INTO purchases (menu_item_id, qty, total_cost_cents, payment_method, created_at)
@@ -452,7 +448,7 @@ async function main() {
         );
         await client.query(
           `INSERT INTO expenses (type, amount_cents, date) VALUES ('inventory', $1, $2)`,
-          [totalCost, dateOnly(at)],
+          [totalCost, cafeDate(at)],
         );
         purchaseCount++;
       }
@@ -460,16 +456,16 @@ async function main() {
 
     // --- Rent + salary on the 1st of each month in range ----------------------
     for (let d = 0; d < DAYS; d++) {
-      if (dayStart(d).getUTCDate() === 1) {
+      if (dateOf(d).endsWith("-01")) {
         await client.query(
           `INSERT INTO expenses (type, amount_cents, date) VALUES ('rent', 50000, $1), ('salary', 30000, $1)`,
-          [dateOnly(dayStart(d))],
+          [dateOf(d)],
         );
       }
     }
     await client.query(
       `INSERT INTO expenses (type, amount_cents, date) VALUES ('other', 1800, $1), ('other', 3500, $2)`,
-      [dateOnly(dayStart(9)), dateOnly(dayStart(21))],
+      [dateOf(9), dateOf(21)],
     );
 
     // --- Back room + stock ledger -------------------------------------------
@@ -491,11 +487,11 @@ async function main() {
         add(at, packs * item.packSize, "purchase");
         await client.query(
           `INSERT INTO expenses (type, amount_cents, date) VALUES ('inventory', $1, $2)`,
-          [packs * item.cost, dateOnly(at)],
+          [packs * item.cost, cafeDate(at)],
         );
         return packs * item.packSize;
       };
-      const openingAt = new Date(dayStart(0).getTime() + 6 * 3_600_000);
+      const openingAt = clock(0, 6 * 60);
       let stock: number;
 
       if (item.daily === undefined) {
@@ -506,7 +502,7 @@ async function main() {
         for (let d = 0; d < DAYS; d++) {
           if (d % 7 === 2) {
             const packs = Math.floor((top - stock) / item.packSize);
-            stock += await buy(new Date(dayStart(d).getTime() + 7 * 3_600_000), packs);
+            stock += await buy(clock(d, 7 * 60), packs);
           }
           const used = Math.min(stock, usedPerDay[d].get(item.name) ?? 0);
           // Logged once a day, after the last sale of the day.
@@ -520,9 +516,9 @@ async function main() {
         // Not tied to a menu item: estimated daily use, opening solved so today's count is finalStock.
         let net = 0;
         for (let d = 0; d < DAYS; d++) {
-          const weekend = [0, 6].includes(dayStart(d).getUTCDay());
+          const weekend = [0, 6].includes(weekdayOf(dateOf(d)));
           const use = Math.floor(item.daily * (weekend ? 1.3 : 1) * (0.8 + rand() * 0.4) + rand());
-          const at = new Date(dayStart(d).getTime() + 18 * 3_600_000);
+          const at = clock(d, 18 * 60); // after closing
           add(at, -use, "use");
           if (at.getTime() <= now) net -= use;
           if (rand() < 0.04) {
@@ -532,10 +528,7 @@ async function main() {
             if (wasteAt.getTime() <= now) net -= waste;
           }
           if (d % 7 === 2) {
-            net += await buy(
-              new Date(dayStart(d).getTime() + 7 * 3_600_000),
-              Math.max(1, Math.ceil(item.daily * 7)),
-            );
+            net += await buy(clock(d, 7 * 60), Math.max(1, Math.ceil(item.daily * 7)));
           }
         }
         const opening = item.finalStock! - net;
@@ -592,9 +585,12 @@ async function main() {
     await client.query("COMMIT");
     // Materialize only COMPLETED buckets. The current day/hour stays un-materialized, which is what
     // lets the real-time aggregates add today's new sales on top automatically.
+    const CAFE_MIDNIGHT =
+      "date_trunc('day', now() AT TIME ZONE 'America/Toronto') AT TIME ZONE 'America/Toronto'";
     const bucketEnd = {
-      sales_daily: "date_trunc('day', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'",
-      item_daily: "date_trunc('day', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'",
+      sales_daily: CAFE_MIDNIGHT,
+      item_daily: CAFE_MIDNIGHT,
+      stock_use_daily: CAFE_MIDNIGHT,
       sales_hourly: "date_trunc('hour', now())",
     };
     for (const [view, end] of Object.entries(bucketEnd)) {

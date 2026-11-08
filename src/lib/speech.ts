@@ -25,6 +25,10 @@ export function speakableText(text: string): string {
       const cNum = parseInt(cents, 10);
       return cNum === 1 ? "1 cent" : `${cNum} cents`;
     })
+    .replace(/(\d)\s*%/g, "$1 percent")
+    .replace(/\s*×\s*/g, " times ")
+    .replace(/\s*&\s*/g, " and ")
+    .replace(/\s*→\s*/g, ", then ")
     .replace(/\s*−\s*/g, " minus ")
     .replace(/\s*\+\s*/g, " plus ")
     .replace(/\s*=\s*/g, " equals ")

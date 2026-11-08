@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { SpeakButton } from "@/components/voice/SpeakButton";
-import { DENOMS, breakdown, roundCash, type Denom } from "@/lib/cash";
+import { DENOMS, breakdown, roundCash, sayPieces, type Denom } from "@/lib/cash";
 import { formatCents } from "@/lib/money";
 import type { PaymentMethod, SaleItem } from "@/lib/types";
 import { MoneyPiece, denomLabel } from "./Cash";
@@ -11,7 +11,7 @@ export interface PaymentChoiceProps {
   items: SaleItem[];
   totalCents: number;
   /** Saves the sale. Throws on failure so the cashier can try again. */
-  onPaid: (method: PaymentMethod) => Promise<void>;
+  onPaid: (method: PaymentMethod) => Promise<"saved" | "offline">;
   /** paid = true once the sale is saved: start a new order. */
   onClose: (paid: boolean) => void;
 }
@@ -148,6 +148,7 @@ export function PaymentChoice({ items, totalCents, onPaid, onClose }: PaymentCho
   const [cardStatus, setCardStatus] = useState<CardStatus>("waiting");
   const [method, setMethod] = useState<PaymentMethod>("cash");
   const [saving, setSaving] = useState(false);
+  const [offline, setOffline] = useState(false);
   const [failed, setFailed] = useState(false);
   const [givenBack, setGivenBack] = useState<number[]>([]);
   const [prevGot, setPrevGot] = useState<number>(0);
@@ -177,7 +178,7 @@ export function PaymentChoice({ items, totalCents, onPaid, onClose }: PaymentCho
     setSaving(true);
     setFailed(false);
     try {
-      await onPaid(m);
+      setOffline((await onPaid(m)) === "offline");
       setStep("done");
     } catch {
       setFailed(true);
@@ -238,7 +239,7 @@ export function PaymentChoice({ items, totalCents, onPaid, onClose }: PaymentCho
                 </span>
               </p>
               <SpeakButton
-                text={`Total is ${formatCents(step === "cash" ? due : totalCents)}`}
+                text={`The total is ${formatCents(step === "cash" ? due : totalCents)}.`}
                 size="sm"
                 label="Read total amount"
               />
@@ -266,7 +267,7 @@ export function PaymentChoice({ items, totalCents, onPaid, onClose }: PaymentCho
           <div className="flex items-center justify-between rounded-2xl bg-white px-5 py-3 ring-1 ring-ink/10">
             <p className="text-xl font-semibold">How is the customer paying?</p>
             <SpeakButton
-              text="How is the customer paying? Choose cash or card."
+              text="How is the customer paying? Tap Cash or Card."
               size="sm"
               label="Read payment choice instructions"
             />
@@ -301,7 +302,7 @@ export function PaymentChoice({ items, totalCents, onPaid, onClose }: PaymentCho
             <div className="mb-4 flex items-center justify-between">
               <p className="text-xl text-ink-soft">Tap what they give you</p>
               <SpeakButton
-                text={`Total due is ${formatCents(due)}. Tap the bills and coins the customer hands you.`}
+                text={`The customer pays ${formatCents(due)}. Tap each bill and coin they give you.`}
                 size="sm"
                 label="Read cash instructions"
               />
@@ -389,7 +390,7 @@ export function PaymentChoice({ items, totalCents, onPaid, onClose }: PaymentCho
                   Need <strong className="tabular-nums">{formatCents(-change)}</strong> more
                 </p>
                 <SpeakButton
-                  text={`Need ${formatCents(-change)} more.`}
+                  text={`You need ${formatCents(-change)} more. Ask the customer for more money.`}
                   size="sm"
                   label="Read amount still needed"
                 />
@@ -403,8 +404,8 @@ export function PaymentChoice({ items, totalCents, onPaid, onClose }: PaymentCho
                     <SpeakButton
                       text={
                         change === 0
-                          ? "Exact change received. No money to give back."
-                          : `Give back ${formatCents(change)} in change. Tap each coin or bill as you hand it to the customer.`
+                          ? "That is the exact money. No change to give back. Tap Done."
+                          : `Give back ${formatCents(change)}. That is ${sayPieces(changePieces)}. Tap each one as you hand it over, then tap Done.`
                       }
                       size="sm"
                       label="Read change to give back"
@@ -444,7 +445,7 @@ export function PaymentChoice({ items, totalCents, onPaid, onClose }: PaymentCho
                           aria-label={`${denomLabel(d)} ${isDone ? "handed over" : "to hand over"}`}
                           className={`relative rounded-xl transition-all motion-safe:active:scale-95 ${
                             isDone
-                              ? "opacity-40 line-through ring-2 ring-sage"
+                              ? "line-through opacity-40 ring-2 ring-sage"
                               : "hover:ring-2 hover:ring-ink/20"
                           }`}
                         >
@@ -492,7 +493,7 @@ export function PaymentChoice({ items, totalCents, onPaid, onClose }: PaymentCho
             <div className="flex items-center justify-between">
               <p className="text-2xl font-semibold">Turn the machine to the customer</p>
               <SpeakButton
-                text="Turn the card machine to the customer so they can tap their card."
+                text="Turn the card machine to face the customer. They tap their card. Then wait."
                 size="sm"
                 label="Read card machine instructions"
               />
@@ -542,11 +543,22 @@ export function PaymentChoice({ items, totalCents, onPaid, onClose }: PaymentCho
           <div className="flex items-center gap-3">
             <h2 className="text-3xl font-bold">Sale done</h2>
             <SpeakButton
-              text={`Sale done! Customer paid ${formatCents(method === "cash" ? got : totalCents)}, got back ${formatCents(method === "cash" ? change : 0)}, and the café keeps ${formatCents(method === "cash" ? due : totalCents)}.`}
+              text={`${
+                method === "cash"
+                  ? `Sale done! The customer paid ${formatCents(got)}. You gave back ${formatCents(change)}. The café keeps ${formatCents(due)}.`
+                  : `Sale done! The customer paid ${formatCents(totalCents)} by card. The café keeps ${formatCents(totalCents)}.`
+              }${offline ? " There is no Wi-Fi, so the sale waits on this tablet and is sent later." : ""} Tap New order for the next customer.`}
               size="md"
               label="Read sale completion summary"
             />
           </div>
+
+          {offline && (
+            <p role="status" className="max-w-xl rounded-tile bg-sky/50 p-4 text-xl">
+              No Wi-Fi right now. The sale is kept on this tablet and is sent by itself when the
+              Wi-Fi is back.
+            </p>
+          )}
 
           {/* Receipt-style summary: what came in, what went back, what the café keeps. */}
           <dl className="grid w-full max-w-xl grid-cols-[1fr_auto] gap-x-4 gap-y-3 rounded-tile bg-white p-6 text-left text-xl ring-1 ring-ink/10">

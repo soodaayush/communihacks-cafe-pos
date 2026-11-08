@@ -10,6 +10,7 @@ import { SpeakButton } from "@/components/voice/SpeakButton";
 import type { InventoryItem } from "@/lib/types";
 import { formatAmount, isMeasured, unitOf } from "@/lib/units";
 import { playSound } from "@/lib/sounds";
+import { staffFetch } from "@/lib/staff-client";
 
 // "In the back" (Tiger Data: inventory_items + the stock_movements ledger), in two parts:
 //   For drinks:      what drinks are made from (beans, tea leaves, milk, lemonade, oranges). Every
@@ -25,19 +26,30 @@ const percent = (i: InventoryItem) =>
 
 function Tile({ item, onCount }: { item: InventoryItem; onCount: () => void }) {
   const forDrinks = item.fullQty !== null;
-  const speechText = forDrinks
-    ? `${item.name}, ${percent(item)}% full. ${formatAmount(item.stock, item.unit)} left. Used ${formatAmount(item.usedLast7Days, item.unit)} this week.`
-    : `${item.name}, ${Math.round(item.stock)} ${unitOf(item.stock, item.unit)} left in the back.`;
+  // From the last 7 days of use (stock_use_daily): runs out within 2 days = running low.
+  const daysLeft = item.stock > 0 ? item.daysLeft : null;
+  const lasts =
+    daysLeft === null
+      ? null
+      : daysLeft < 1
+        ? "Runs out today"
+        : `About ${daysLeft} ${daysLeft === 1 ? "day" : "days"} left`;
+  const speechText =
+    (forDrinks
+      ? `${item.name}. ${percent(item)} percent full, ${formatAmount(item.stock, item.unit)} left. This week drinks used ${formatAmount(item.usedLast7Days, item.unit)}.`
+      : `${item.name}. ${Math.round(item.stock)} ${unitOf(item.stock, item.unit)} left in the back.`) +
+    (lasts ? ` ${lasts}.` : "");
 
   return (
-    <div className="flex flex-col justify-between gap-3 rounded-tile bg-white p-4 ring-1 ring-ink/10 lg:p-5">
-      <div className="flex items-center gap-3">
-        <Icon name={pictureOf(item)} className="size-14 lg:size-16" />
+    <div className="flex flex-col justify-between gap-5 rounded-tile bg-white p-5 ring-1 ring-ink/10 lg:p-6">
+      <div className="flex items-center gap-4">
+        <Icon name={pictureOf(item)} className="size-16 lg:size-20" />
         <p className="min-w-0 flex-1 text-xl font-semibold">{item.name}</p>
         <div className="flex items-center gap-2">
           {forDrinks ? (
             <p className="text-right text-3xl leading-none font-bold tabular-nums">
-              {percent(item)}%<span className="block text-base font-normal text-ink-soft">full</span>
+              {percent(item)}%
+              <span className="block text-base font-normal text-ink-soft">full</span>
             </p>
           ) : (
             <p className="text-right">
@@ -57,8 +69,16 @@ function Tile({ item, onCount }: { item: InventoryItem; onCount: () => void }) {
             stock={item.stock}
             reorderLevel={item.reorderLevel}
             capacity={item.fullQty ?? undefined}
+            low={daysLeft !== null && daysLeft <= 2}
             note={forDrinks ? `${formatAmount(item.stock, item.unit)} left` : undefined}
           />
+          {lasts && (
+            <p className="flex items-center gap-2 text-lg text-ink-soft">
+              <Icon name="hourglass" className="size-6" />
+              <span className="font-semibold text-ink">{lasts}</span>
+              <span>at this week&rsquo;s pace</span>
+            </p>
+          )}
           {forDrinks && (
             <p className="text-lg text-ink-soft">
               Used this week:{" "}
@@ -99,7 +119,7 @@ export function BackRoom() {
   const others = items.filter((i) => i.fullQty === null);
 
   async function saveCount(item: InventoryItem, count: number) {
-    const res = await fetch("/api/supplies/count", {
+    const res = await staffFetch("/api/supplies/count", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ inventoryItemId: item.id, stock: count }),
@@ -114,7 +134,8 @@ export function BackRoom() {
   }
 
   const heading = "text-2xl font-bold";
-  const grid = "grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4";
+  // Roomy: two big tiles per row on a laptop or iPad, three only on very wide screens.
+  const grid = "grid gap-5 lg:grid-cols-2 lg:gap-6 2xl:grid-cols-3";
 
   return (
     <div className="flex flex-col gap-4 lg:min-h-0 lg:flex-1">

@@ -9,9 +9,10 @@ import { CountSheet } from "@/components/stock/CountSheet";
 import { StockLevel } from "@/components/stock/StockLevel";
 import { Trends } from "@/components/stock/Trends";
 import { SpeakButton } from "@/components/voice/SpeakButton";
-import { imageUrl } from "@/lib/integrations/cloudinary";
+import { imageUrl } from "@/lib/images";
 import type { MenuItem, RestockSuggestion, TrendPoint } from "@/lib/types";
 import { playSound } from "@/lib/sounds";
+import { staffFetch } from "@/lib/staff-client";
 
 // View only: this screen shows what is on the shelf. Buying happens outside the register.
 
@@ -52,7 +53,7 @@ export default function StockPage() {
   useEffect(load, []);
 
   async function saveCount(item: MenuItem, count: number) {
-    const res = await fetch("/api/inventory/count", {
+    const res = await staffFetch("/api/inventory/count", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ menuItemId: item.id, stock: count }),
@@ -137,7 +138,7 @@ export default function StockPage() {
               Drinks are made fresh. Their ingredients are in &ldquo;In the back&rdquo;.
             </p>
             <SpeakButton
-              text="Shelf stock. Drinks are made fresh, so their ingredients are kept in the back. Here you can count food on the shelf."
+              text="The shelf. This is the food for sale. Drinks are made fresh, so their ingredients are in the back. To count something, tap its pencil."
               size="sm"
               label="Read shelf view info"
             />
@@ -145,7 +146,7 @@ export default function StockPage() {
           {/* On big screens the tiles share the whole height (never shorter than 11.5rem). */}
           <section
             aria-label="Shelf"
-            className="grid gap-4 sm:grid-cols-2 lg:min-h-0 lg:flex-1 lg:auto-rows-[minmax(11.5rem,1fr)] lg:overflow-y-auto lg:pr-1"
+            className="grid auto-rows-max content-start gap-4 sm:grid-cols-2 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pr-1"
           >
             {menu
               .filter((item) => item.category !== "drink")
@@ -156,7 +157,7 @@ export default function StockPage() {
                 >
                   <div className="flex items-center gap-3">
                     <Image
-                      src={imageUrl(item.imagePublicId, 96)}
+                      src={imageUrl(item.imagePublicId)}
                       alt=""
                       width={56}
                       height={56}
@@ -174,7 +175,11 @@ export default function StockPage() {
                         <span className="text-base text-ink-soft lg:text-lg">left</span>
                       </p>
                       <SpeakButton
-                        text={`${item.name}, ${item.stock} left on the shelf.${runningLow.has(item.id) ? " Running low!" : ""}`}
+                        text={
+                          item.stock <= 0
+                            ? `${item.name}. None left. Time to buy more.`
+                            : `${item.name}. ${item.stock} left on the shelf.${runningLow.has(item.id) ? " Running low." : ""}`
+                        }
                         size="sm"
                         label={`Read stock for ${item.name}`}
                       />
@@ -203,7 +208,7 @@ export default function StockPage() {
           name={counting.name}
           picture={
             <Image
-              src={imageUrl(counting.imagePublicId, 96)}
+              src={imageUrl(counting.imagePublicId)}
               alt=""
               width={56}
               height={56}

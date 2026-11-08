@@ -1,3 +1,4 @@
+import { CAFE_TZ } from "./cafe-time";
 import { query } from "./db";
 import type { InventoryItem, MenuItem } from "./types";
 
@@ -26,7 +27,10 @@ export function listMenu() {
 }
 
 // One shape for back-room items everywhere (/api/supplies, counts, buying, movements).
-// `usedLast7Days` reads the stock_movements hypertable: everything taken out for drinks this week.
+// Use comes from the stock_use_daily continuous aggregate (café days):
+//   usedLast7Days = used today and the 6 days before
+//   daysLeft      = stock / the average day of the last 7 full days (null when nothing was used)
+const CAFE_MIDNIGHT = `(date_trunc('day', now() AT TIME ZONE '${CAFE_TZ}') AT TIME ZONE '${CAFE_TZ}')`;
 const SUPPLY_COLUMNS = `
   i.id,
   i.name,
@@ -39,11 +43,14 @@ const SUPPLY_COLUMNS = `
   coalesce(nullif(i.pack_name, ''), i.unit)  AS "packName",
   i.pack_size::float8                        AS "packSize",
   i.full_qty::float8                         AS "fullQty",
-  coalesce((SELECT -sum(m.change_qty)
-              FROM stock_movements m
-             WHERE m.inventory_item_id = i.id
-               AND m.reason = 'use'
-               AND m.created_at >= now() - interval '7 days'), 0)::float8 AS "usedLast7Days"`;
+  coalesce((SELECT sum(u.used) FROM stock_use_daily u
+             WHERE u.inventory_item_id = i.id
+               AND u.day >= ${CAFE_MIDNIGHT} - interval '6 days'), 0)::float8 AS "usedLast7Days",
+  (SELECT CASE WHEN sum(u.used) > 0 THEN floor(i.stock / (sum(u.used) / 7))::int END
+     FROM stock_use_daily u
+    WHERE u.inventory_item_id = i.id
+      AND u.day >= ${CAFE_MIDNIGHT} - interval '7 days'
+      AND u.day <  ${CAFE_MIDNIGHT})                                         AS "daysLeft"`;
 
 /** All back-room items. Low ones first. */
 export function listSupplies() {

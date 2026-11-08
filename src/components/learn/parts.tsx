@@ -3,7 +3,7 @@
 // Small pictures shared by both Learn games: the lightbulb, an item chip and an amount tile.
 import Image from "next/image";
 import type { ReactNode } from "react";
-import { imageUrl } from "@/lib/integrations/cloudinary";
+import { imageUrl } from "@/lib/images";
 import { formatCents } from "@/lib/money";
 import type { LearnUnit } from "@/lib/learn";
 
@@ -44,7 +44,7 @@ export function ItemPicture({
 }) {
   return (
     <Image
-      src={imageUrl(unit.imagePublicId, 96)}
+      src={imageUrl(unit.imagePublicId)}
       alt=""
       width={96}
       height={96}
@@ -63,7 +63,7 @@ export function PieceImage({
   className?: string;
 }) {
   return (
-    <Image src={imageUrl(id, 96)} alt="" width={96} height={96} unoptimized className={className} />
+    <Image src={imageUrl(id)} alt="" width={96} height={96} unoptimized className={className} />
   );
 }
 

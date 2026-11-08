@@ -15,7 +15,7 @@ const LINKS: { href: string; icon: IconName; label: string }[] = [
 export function NavBar() {
   const path = usePathname();
   return (
-    <nav className="grid grid-cols-[repeat(4,1fr)_auto] gap-3 border-t border-ink/10 bg-lavender/60 px-4 py-3">
+    <nav className="grid grid-cols-[repeat(4,1fr)_auto] gap-2 border-t border-ink/5 bg-paper/80 px-4 py-2.5 shadow-[0_-8px_24px_-16px_rgb(61_59_72/0.25)] backdrop-blur-md sm:gap-3">
       {LINKS.map(({ href, icon, label }) => {
         const active = path.startsWith(href);
         return (
@@ -23,7 +23,7 @@ export function NavBar() {
             key={href}
             href={href}
             aria-current={active ? "page" : undefined}
-            className={`flex min-h-touch items-center justify-center gap-3 rounded-tile text-xl font-semibold ${active ? "bg-white ring-1 ring-ink/15" : "text-ink-soft"}`}
+            className={`flex min-h-touch items-center justify-center gap-3 rounded-tile text-xl font-semibold transition-colors ${active ? "bg-lavender/70 text-ink" : "text-ink-soft hover:bg-lavender/30 hover:text-ink"}`}
           >
             <Icon name={icon} className="size-10" />
             <span className="hidden sm:inline">{label}</span>

@@ -30,6 +30,37 @@ assert.equal(months[0].planCents, null);
 assert.deepEqual(months[1].planCents, { rent: 800, salary: 0, inventory: 0, other: 0 });
 assert.deepEqual(buildMonths([], [], 500), []);
 
+// Staff typed "we had 8,000 on November 1": November starts there, October is worked back from it
+// (its closing is November's opening), and anything after carries forward as usual.
+const anchored = buildMonths(
+  [
+    { date: "2026-10-30", moneyInCents: 1000 },
+    { date: "2026-11-01", moneyInCents: 2000 },
+  ],
+  [{ id: "a", type: "rent", amountCents: 800, date: "2026-10-31" }],
+  8000,
+  "2026-11",
+);
+assert.deepEqual(
+  anchored.map((m) => [m.month, m.openingCents, m.closingCents]),
+  [
+    ["2026-10", 7800, 8000], // 7800 + 1000 in − 800 out = 8000
+    ["2026-11", 8000, 10_000],
+  ],
+);
+// A month with no sales or bills yet still gets its balance.
+assert.deepEqual(
+  buildMonths([{ date: "2026-10-30", moneyInCents: 1000 }], [], 5000, "2026-11").map((m) => [
+    m.month,
+    m.openingCents,
+    m.closingCents,
+  ]),
+  [
+    ["2026-10", 4000, 5000],
+    ["2026-11", 5000, 5000],
+  ],
+);
+
 // Break-even: November's bills (4300 so far) already beat its plan (October's 800), so 4300 is needed.
 assert.deepEqual(billsCover(months[1]), { needCents: 4300, toGoCents: 2300, extraCents: 0 });
 // October has no plan, so its own bills (800) count; 1500 came in, 700 extra.
