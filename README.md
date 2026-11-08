@@ -13,6 +13,17 @@ The app has four screens, one tab each:
 
 Requirements from the café that this covers: tracking sales, expenses and profit; a budget that carries its balance forward; a dashboard; inventory and forecasting (restock suggestions); and a learning tool that makes money in, money out and money left legible.
 
+## Screenshots
+
+|                                                                                         |                                                                          |
+| --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| ![Register: tap pictures to build an order](docs/screenshots/register.png)              | ![Stock: what is left, as pictures and bars](docs/screenshots/stock.png) |
+| **Register**: tap pictures to build an order, then pay                                  | **Stock**: what is left, with a warning when something runs low          |
+| ![Money: what came in, what was spent, what is in hand](docs/screenshots/money.png)     | ![Learn: add up 10 muffins](docs/screenshots/learn-add-it-up.png)        |
+| **Money**: customers paid minus what we bought equals money in hand                     | **Learn, add it up**: "$2.50 each × 10 muffins = ?"                      |
+| ![Learn: a hint after a wrong answer](docs/screenshots/learn-hint.png)                  | ![Learn: make change](docs/screenshots/learn-make-change.png)            |
+| **Learn, a hint**: a wrong answer greys out and a hint helps, without giving the answer | **Learn, make change**: what they gave, what it costs, the change        |
+
 ## How it is built
 
 Stack: Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · Tiger Data (Postgres + TimescaleDB) · ElevenLabs · Google Gemini. It runs locally (`npm run dev`) for the demo; there is no hosted deployment.
